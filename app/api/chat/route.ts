@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai";
-import { streamText } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 
 export const runtime = "edge";
 
@@ -18,7 +18,7 @@ Your capabilities:
 - Provide structured, actionable responses with clear step-by-step guidance
 
 Always be concise, professional, and action-oriented. Format responses with clear structure using line breaks and numbered lists where appropriate.`,
-    messages,
+    messages: await convertToModelMessages(messages),
   });
 
   return result.toUIMessageStreamResponse();
