@@ -1,8 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
-
-export const runtime = "edge";
+import { getSupabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   const { sourceCode, sourceLang } = await req.json();
@@ -13,6 +12,8 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+
+  const startTime = Date.now();
 
   try {
     const result = await generateText({
@@ -40,6 +41,25 @@ Rules:
     if (code.startsWith("```")) {
       code = code.replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "");
     }
+
+    const durationMs = Date.now() - startTime;
+    const tokensEst = Math.round(code.length / 4);
+
+    // Log to Supabase (fire-and-forget, don't block the response)
+    getSupabase()
+      .from("modernization_logs")
+      .insert({
+        source_lang: sourceLang,
+        target_lang: "Python",
+        source_code: sourceCode,
+        output_code: code,
+        model: "gpt-4o",
+        tokens_est: tokensEst,
+        duration_ms: durationMs,
+      })
+      .then(({ error }) => {
+        if (error) console.error("Supabase modernization_logs insert error:", error.message);
+      });
 
     return NextResponse.json({ code });
   } catch (error) {

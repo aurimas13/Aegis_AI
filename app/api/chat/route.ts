@@ -1,10 +1,28 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText, convertToModelMessages } from "ai";
-
-export const runtime = "edge";
+import { getSupabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
+
+  // Log the latest user message to Supabase
+  const lastUserMsg = [...messages]
+    .reverse()
+    .find((m: { role: string }) => m.role === "user");
+  if (lastUserMsg) {
+    const userText = lastUserMsg.parts
+      ?.filter((p: { type: string }) => p.type === "text")
+      .map((p: { text: string }) => p.text)
+      .join("") ?? "";
+    if (userText) {
+      getSupabase()
+        .from("chat_logs")
+        .insert({ role: "user", content: userText, model: "gpt-4o-mini", tokens_est: Math.round(userText.length / 4) })
+        .then(({ error }: { error: { message: string } | null }) => {
+          if (error) console.error("Supabase chat_logs insert error (user):", error.message);
+        });
+    }
+  }
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
@@ -19,6 +37,17 @@ Your capabilities:
 
 Always be concise, professional, and action-oriented. Format responses with clear structure using line breaks and numbered lists where appropriate.`,
     messages: await convertToModelMessages(messages),
+    onFinish({ text }) {
+      // Log the assistant response to Supabase
+      if (text) {
+        getSupabase()
+          .from("chat_logs")
+          .insert({ role: "assistant", content: text, model: "gpt-4o-mini", tokens_est: Math.round(text.length / 4) })
+          .then(({ error }: { error: { message: string } | null }) => {
+            if (error) console.error("Supabase chat_logs insert error (assistant):", error.message);
+          });
+      }
+    },
   });
 
   return result.toUIMessageStreamResponse();

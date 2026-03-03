@@ -2,8 +2,6 @@ import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
-
 export async function POST(req: Request) {
   const { sourceCode, sourceLang, targetLang } = await req.json();
 
