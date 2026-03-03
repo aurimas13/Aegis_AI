@@ -2,28 +2,30 @@
 
 import { cn } from "@/lib/utils";
 import { Bot, User } from "lucide-react";
+import type { UIMessage } from "ai";
 
-export interface Message {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  timestamp: string;
-}
-
-export function ChatMessage({ message }: { message: Message }) {
+export function ChatMessage({ message }: { message: UIMessage }) {
   if (message.role === "system") {
+    const text = message.parts
+      .filter((p): p is { type: "text"; text: string } => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+
     return (
       <div className="flex justify-center py-3">
         <div className="px-4 py-2 rounded-full bg-secondary/60 border border-border">
-          <p className="text-[12px] text-muted-foreground">
-            {message.content}
-          </p>
+          <p className="text-[12px] text-muted-foreground">{text}</p>
         </div>
       </div>
     );
   }
 
   const isUser = message.role === "user";
+
+  const text = message.parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("");
 
   return (
     <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
@@ -53,16 +55,8 @@ export function ChatMessage({ message }: { message: Message }) {
               : "bg-secondary/80 text-foreground/90 rounded-tl-sm"
           )}
         >
-          <div className="whitespace-pre-wrap">{message.content}</div>
+          <div className="whitespace-pre-wrap">{text}</div>
         </div>
-        <p
-          className={cn(
-            "text-[11px] text-muted-foreground/60 px-1",
-            isUser && "text-right"
-          )}
-        >
-          {message.timestamp}
-        </p>
       </div>
     </div>
   );

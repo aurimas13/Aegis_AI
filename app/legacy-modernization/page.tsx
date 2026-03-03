@@ -68,76 +68,7 @@ const DUMMY_COBOL = `       IDENTIFICATION DIVISION.
                END-IF
            END-IF.`;
 
-const DUMMY_TYPESCRIPT = `import { Injectable, Logger } from '@nestjs/common';
-import { CustomerRepository } from './customer.repository';
-import { Customer, CustomerStatus } from './customer.model';
-
-interface ProcessingResult {
-  totalProcessed: number;
-  updated: number;
-  errors: string[];
-}
-
-@Injectable()
-export class CustomerManagementService {
-  private readonly logger = new Logger(
-    CustomerManagementService.name,
-  );
-  private readonly INTEREST_RATE = 0.05;
-
-  constructor(
-    private readonly repository: CustomerRepository,
-  ) {}
-
-  async processAllCustomers(): Promise<ProcessingResult> {
-    const result: ProcessingResult = {
-      totalProcessed: 0,
-      updated: 0,
-      errors: [],
-    };
-
-    try {
-      const customers = await this.repository.findAll();
-      result.totalProcessed = customers.length;
-
-      const activeCustomers = customers.filter(
-        (c) => c.status === CustomerStatus.ACTIVE,
-      );
-
-      for (const customer of activeCustomers) {
-        try {
-          await this.applyInterest(customer);
-          result.updated++;
-        } catch (error) {
-          const msg = \`Failed to update \${customer.id}\`;
-          this.logger.error(msg, error);
-          result.errors.push(msg);
-        }
-      }
-
-      this.logger.log(
-        \`Processed: \${result.totalProcessed}, \` +
-        \`Updated: \${result.updated}\`,
-      );
-    } catch (error) {
-      this.logger.error('Processing failed', error);
-      throw error;
-    }
-
-    return result;
-  }
-
-  private async applyInterest(
-    customer: Customer,
-  ): Promise<void> {
-    const updatedBalance =
-      customer.balance * (1 + this.INTEREST_RATE);
-
-    await this.repository.update(customer.id, {
-      balance: Math.round(updatedBalance * 100) / 100,
-    });
-  }
-}`;
+const PLACEHOLDER_OUTPUT = `// Click "Transform" to modernize the source code with AI...`;
 
 const metrics = [
   { label: "Lines Analyzed", value: "52", icon: BarChart3 },
@@ -148,19 +79,32 @@ const metrics = [
 
 export default function LegacyModernizationPage() {
   const [sourceCode, setSourceCode] = useState(DUMMY_COBOL);
-  const [targetCode] = useState(DUMMY_TYPESCRIPT);
+  const [targetCode, setTargetCode] = useState(PLACEHOLDER_OUTPUT);
   const [sourceLang, setSourceLang] = useState("COBOL");
   const [targetLang, setTargetLang] = useState("TypeScript");
   const [isTransforming, setIsTransforming] = useState(false);
-  const [hasTransformed, setHasTransformed] = useState(true);
+  const [hasTransformed, setHasTransformed] = useState(false);
 
-  const handleTransform = () => {
+  const handleTransform = async () => {
+    if (!sourceCode.trim() || isTransforming) return;
     setIsTransforming(true);
     setHasTransformed(false);
-    setTimeout(() => {
-      setIsTransforming(false);
+    setTargetCode("// Transforming with AI...");
+    try {
+      const res = await fetch("/api/transform", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceCode, sourceLang, targetLang }),
+      });
+      if (!res.ok) throw new Error("Transform request failed");
+      const data = await res.json();
+      setTargetCode(data.code);
       setHasTransformed(true);
-    }, 2500);
+    } catch (error) {
+      setTargetCode("// Error: Transform failed. Please try again.");
+    } finally {
+      setIsTransforming(false);
+    }
   };
 
   return (
@@ -235,9 +179,7 @@ export default function LegacyModernizationPage() {
           <CodePanel
             title="Modernized Output"
             language={targetLang}
-            code={
-              hasTransformed ? targetCode : "// Awaiting transformation..."
-            }
+            code={targetCode}
             readOnly
             languages={TARGET_LANGUAGES}
             onLanguageChange={setTargetLang}
