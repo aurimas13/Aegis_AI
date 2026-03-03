@@ -1,8 +1,9 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 let _supabase: SupabaseClient | null = null;
+let _warned = false;
 
-export function getSupabase(): SupabaseClient {
+export function getSupabase(): SupabaseClient | null {
   if (!_supabase) {
     const url =
       process.env.SUPABASE_URL ??
@@ -12,7 +13,11 @@ export function getSupabase(): SupabaseClient {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!url || !key) {
-      throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY env vars");
+      if (!_warned) {
+        console.warn("Supabase env vars not set — logging disabled");
+        _warned = true;
+      }
+      return null;
     }
 
     _supabase = createClient(url, key);

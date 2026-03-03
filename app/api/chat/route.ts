@@ -14,9 +14,9 @@ export async function POST(req: Request) {
       ?.filter((p: { type: string }) => p.type === "text")
       .map((p: { text: string }) => p.text)
       .join("") ?? "";
-    if (userText) {
-      getSupabase()
-        .from("chat_logs")
+    const sb = getSupabase();
+    if (userText && sb) {
+      sb.from("chat_logs")
         .insert({ role: "user", content: userText, model: "gpt-4o-mini", tokens_est: Math.round(userText.length / 4) })
         .then(({ error }: { error: { message: string } | null }) => {
           if (error) console.error("Supabase chat_logs insert error (user):", error.message);
@@ -39,8 +39,9 @@ Always be concise, professional, and action-oriented. Format responses with clea
     messages: await convertToModelMessages(messages),
     onFinish({ text }) {
       // Log the assistant response to Supabase
-      if (text) {
-        getSupabase()
+      const sbFinish = getSupabase();
+      if (text && sbFinish) {
+        sbFinish
           .from("chat_logs")
           .insert({ role: "assistant", content: text, model: "gpt-4o-mini", tokens_est: Math.round(text.length / 4) })
           .then(({ error }: { error: { message: string } | null }) => {

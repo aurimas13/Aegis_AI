@@ -30,6 +30,12 @@ CREATE TABLE IF NOT EXISTS chat_logs (
 ALTER TABLE modernization_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_logs ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if re-running this script
+DROP POLICY IF EXISTS "Allow anon insert on modernization_logs" ON modernization_logs;
+DROP POLICY IF EXISTS "Allow anon select on modernization_logs" ON modernization_logs;
+DROP POLICY IF EXISTS "Allow anon insert on chat_logs" ON chat_logs;
+DROP POLICY IF EXISTS "Allow anon select on chat_logs" ON chat_logs;
+
 -- Allow inserts from the anon key (public client)
 CREATE POLICY "Allow anon insert on modernization_logs"
   ON modernization_logs FOR INSERT

@@ -46,20 +46,22 @@ Rules:
     const tokensEst = Math.round(code.length / 4);
 
     // Log to Supabase (fire-and-forget, don't block the response)
-    getSupabase()
-      .from("modernization_logs")
-      .insert({
-        source_lang: sourceLang,
-        target_lang: "Python",
-        source_code: sourceCode,
-        output_code: code,
-        model: "gpt-4o",
-        tokens_est: tokensEst,
-        duration_ms: durationMs,
-      })
-      .then(({ error }) => {
-        if (error) console.error("Supabase modernization_logs insert error:", error.message);
-      });
+    const sb = getSupabase();
+    if (sb) {
+      sb.from("modernization_logs")
+        .insert({
+          source_lang: sourceLang,
+          target_lang: "Python",
+          source_code: sourceCode,
+          output_code: code,
+          model: "gpt-4o",
+          tokens_est: tokensEst,
+          duration_ms: durationMs,
+        })
+        .then(({ error }) => {
+          if (error) console.error("Supabase modernization_logs insert error:", error.message);
+        });
+    }
 
     return NextResponse.json({ code });
   } catch (error) {
