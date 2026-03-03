@@ -1,16 +1,32 @@
 "use client";
 
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Bot, User } from "lucide-react";
 import type { UIMessage } from "ai";
+import {
+  GovernanceCard,
+  computeGovernanceMetrics,
+} from "@/components/governance-card";
+
+function getTextFromParts(parts: UIMessage["parts"]): string {
+  return parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("");
+}
 
 export function ChatMessage({ message }: { message: UIMessage }) {
-  if (message.role === "system") {
-    const text = message.parts
-      .filter((p): p is { type: "text"; text: string } => p.type === "text")
-      .map((p) => p.text)
-      .join("");
+  const text = getTextFromParts(message.parts);
 
+  const governanceMetrics = useMemo(() => {
+    if (message.role === "assistant" && text.length > 0) {
+      return computeGovernanceMetrics(text);
+    }
+    return null;
+  }, [message.role, text]);
+
+  if (message.role === "system") {
     return (
       <div className="flex justify-center py-3">
         <div className="px-4 py-2 rounded-full bg-secondary/60 border border-border">
@@ -21,11 +37,6 @@ export function ChatMessage({ message }: { message: UIMessage }) {
   }
 
   const isUser = message.role === "user";
-
-  const text = message.parts
-    .filter((p): p is { type: "text"; text: string } => p.type === "text")
-    .map((p) => p.text)
-    .join("");
 
   return (
     <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
@@ -43,7 +54,7 @@ export function ChatMessage({ message }: { message: UIMessage }) {
       </div>
       <div
         className={cn(
-          "max-w-[75%] space-y-1",
+          "max-w-[85%] space-y-1",
           isUser && "flex flex-col items-end"
         )}
       >
@@ -57,6 +68,7 @@ export function ChatMessage({ message }: { message: UIMessage }) {
         >
           <div className="whitespace-pre-wrap">{text}</div>
         </div>
+        {governanceMetrics && <GovernanceCard metrics={governanceMetrics} />}
       </div>
     </div>
   );
