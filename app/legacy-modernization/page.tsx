@@ -68,40 +68,49 @@ const DUMMY_COBOL = `       IDENTIFICATION DIVISION.
                END-IF
            END-IF.`;
 
-const PLACEHOLDER_OUTPUT = `// Click "Transform" to modernize the source code with AI...`;
-
-const metrics = [
-  { label: "Lines Analyzed", value: "52", icon: BarChart3 },
-  { label: "Complexity", value: "6.2", icon: AlertTriangle },
-  { label: "Transform Time", value: "1.8s", icon: Clock },
-  { label: "Security", value: "Passed", icon: Shield },
-];
+const PLACEHOLDER_OUTPUT = `# Click "Transform" to modernize the source code with AI...`;
 
 export default function LegacyModernizationPage() {
   const [sourceCode, setSourceCode] = useState(DUMMY_COBOL);
   const [targetCode, setTargetCode] = useState(PLACEHOLDER_OUTPUT);
   const [sourceLang, setSourceLang] = useState("COBOL");
-  const [targetLang, setTargetLang] = useState("TypeScript");
+  const [targetLang, setTargetLang] = useState("Python");
   const [isTransforming, setIsTransforming] = useState(false);
-  const [hasTransformed, setHasTransformed] = useState(false);
+  const [transformTime, setTransformTime] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const linesAnalyzed = sourceCode.split("\n").length;
+  const outputLines = targetCode.split("\n").length;
+
+  const metrics = [
+    { label: "Lines Analyzed", value: String(linesAnalyzed), icon: BarChart3 },
+    { label: "Output Lines", value: String(outputLines), icon: AlertTriangle },
+    { label: "Transform Time", value: transformTime ?? "—", icon: Clock },
+    { label: "Security", value: errorMsg ? "Error" : "Passed", icon: Shield },
+  ];
 
   const handleTransform = async () => {
     if (!sourceCode.trim() || isTransforming) return;
     setIsTransforming(true);
-    setHasTransformed(false);
-    setTargetCode("// Transforming with AI...");
+    setErrorMsg(null);
+    setTransformTime(null);
+    setTargetCode("# Modernizing with GPT-4o...\n# Translating to Python with docstrings & unit tests...");
+    const start = performance.now();
     try {
-      const res = await fetch("/api/transform", {
+      const res = await fetch("/api/modernize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceCode, sourceLang, targetLang }),
       });
-      if (!res.ok) throw new Error("Transform request failed");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Transform request failed");
+      const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+      setTransformTime(`${elapsed}s`);
       setTargetCode(data.code);
-      setHasTransformed(true);
     } catch (error) {
-      setTargetCode("// Error: Transform failed. Please try again.");
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      setErrorMsg(msg);
+      setTargetCode(`# Error: ${msg}\n# Please try again.`);
     } finally {
       setIsTransforming(false);
     }
@@ -171,7 +180,7 @@ export default function LegacyModernizationPage() {
             )}
           </button>
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
-            {isTransforming ? "Analyzing" : "Transform"}
+            {isTransforming ? "Modernizing" : "Transform"}
           </span>
         </div>
 

@@ -29,5 +29,10 @@ Rules:
     prompt: `Transform the following ${sourceLang} code into ${targetLang}:\n\n${sourceCode}`,
   });
 
-  return NextResponse.json({ code: result.text });
+  let code = result.text.trim();
+  if (code.startsWith("```")) {
+    code = code.replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "");
+  }
+
+  return NextResponse.json({ code });
 }

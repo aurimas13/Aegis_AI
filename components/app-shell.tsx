@@ -96,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="min-w-0">
                 <p className="text-[13px] font-medium text-foreground truncate">
-                  Sarah Chen
+                  Aurimas Nausedas
                 </p>
                 <p className="text-[11px] text-muted-foreground truncate">
                   Platform Admin

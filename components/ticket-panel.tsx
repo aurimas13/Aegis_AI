@@ -6,7 +6,7 @@ const ticketInfo = {
   id: "INC-2024-0847",
   status: "In Progress",
   priority: "P1 - Critical",
-  assignee: "Sarah Chen",
+  assignee: "Aurimas Nausedas",
   team: "Platform Engineering",
   created: "14:23 UTC",
   updated: "14:58 UTC",
