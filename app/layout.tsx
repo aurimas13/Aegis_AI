@@ -16,8 +16,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className={inter.className}>
+    <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
+      <body
+        className={inter.className}
+        style={{ backgroundColor: 'hsl(222, 84%, 5%)', color: 'hsl(210, 40%, 98%)' }}
+      >
         <AppShell>{children}</AppShell>
       </body>
     </html>
