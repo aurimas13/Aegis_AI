@@ -17,6 +17,7 @@ import {
   X,
   Trash2,
   Download,
+  FileText,
 } from "lucide-react";
 import { ChatMessage } from "@/components/chat-message";
 import { TicketPanel } from "@/components/ticket-panel";
@@ -43,6 +44,9 @@ export default function ITSMCopilotPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
+  // Attached file name for display
+  const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -62,13 +66,16 @@ export default function ITSMCopilotPage() {
 
   // Focus search input when opened
   useEffect(() => {
-    if (showSearch) searchInputRef.current?.focus();
+    if (showSearch) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
   }, [showSearch]);
 
   const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return;
     sendMessage({ text: input.trim() });
     setInput("");
+    setAttachedFileName(null);
   }, [input, isLoading, sendMessage]);
 
   // Send a specific text string as a message (used by ticket panel)
@@ -81,17 +88,19 @@ export default function ITSMCopilotPage() {
   );
 
   // ── File Attach ──
-  const handleFileAttach = () => {
-    fileInputRef.current?.click();
-  };
+  const handleFileAttach = useCallback(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  }, []);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 1024 * 1024) {
       alert("File must be under 1 MB");
-      e.target.value = "";
       return;
     }
 
@@ -99,67 +108,83 @@ export default function ITSMCopilotPage() {
       const text = await file.text();
       const prefix = `[Attached file: ${file.name}]\n`;
       setInput((prev) => (prev ? prev + "\n" + prefix + text : prefix + text));
+      setAttachedFileName(file.name);
     } catch {
       alert("Could not read file. Please attach a text-based file.");
     }
-    e.target.value = "";
-  };
+  }, []);
 
   // ── Voice Recording (Web Speech API) ──
-  const toggleRecording = () => {
+  const toggleRecording = useCallback(() => {
     if (isRecording) {
       recognitionRef.current?.stop();
+      recognitionRef.current = null;
       setIsRecording(false);
       return;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome.");
+    if (!SpeechRecognitionCtor) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = true;
+    try {
+      const recognition = new SpeechRecognitionCtor();
+      recognition.lang = "en-US";
+      recognition.interimResults = true;
+      recognition.continuous = true;
+      recognition.maxAlternatives = 1;
 
-    let finalTranscript = "";
+      let finalTranscript = "";
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (event: any) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + " ";
-        } else {
-          interim += transcript;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + " ";
+          } else {
+            interim += transcript;
+          }
         }
-      }
-      setInput(finalTranscript + interim);
-    };
+        setInput(finalTranscript + interim);
+      };
 
-    recognition.onerror = () => {
-      setIsRecording(false);
-    };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+        setIsRecording(false);
+        recognitionRef.current = null;
+        if (event.error === "not-allowed") {
+          alert("Microphone access was denied. Please allow microphone access in your browser settings and try again.");
+        }
+      };
 
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
+      recognition.onend = () => {
+        setIsRecording(false);
+        recognitionRef.current = null;
+      };
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsRecording(true);
-  };
+      recognitionRef.current = recognition;
+      recognition.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start speech recognition:", err);
+      alert("Failed to start voice recording. Please make sure you're using Chrome or Edge.");
+    }
+  }, [isRecording]);
 
   // ── Search ──
-  const toggleSearch = () => {
-    setShowSearch((v) => !v);
-    if (showSearch) setSearchQuery("");
-  };
+  const toggleSearch = useCallback(() => {
+    setShowSearch((v) => {
+      if (v) setSearchQuery("");
+      return !v;
+    });
+  }, []);
 
   const filteredMessages = searchQuery.trim()
     ? messages.filter((m) => {
@@ -172,12 +197,12 @@ export default function ITSMCopilotPage() {
     : messages;
 
   // ── More menu actions ──
-  const handleClearChat = () => {
+  const handleClearChat = useCallback(() => {
     setMessages([]);
     setShowMenu(false);
-  };
+  }, [setMessages]);
 
-  const handleExportChat = () => {
+  const handleExportChat = useCallback(() => {
     const text = messages
       .map((m) => {
         const content = m.parts
@@ -192,16 +217,27 @@ export default function ITSMCopilotPage() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `itsm-copilot-chat-${Date.now()}.txt`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     setShowMenu(false);
-  };
+  }, [messages]);
 
   const assistantMsgCount = messages.filter((m) => m.role === "assistant").length;
   const userMsgCount = messages.filter((m) => m.role === "user").length;
 
   return (
     <div className="flex h-full">
+      {/* Hidden file input — placed at root level outside flex containers */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept=".txt,.log,.csv,.json,.xml,.md,.js,.ts,.py,.java,.cobol,.cbl,.sql,.yaml,.yml,.html,.css"
+        onChange={handleFileChange}
+      />
+
       <div className="flex-1 flex flex-col min-w-0">
         <header className="border-b border-border shrink-0">
           <div className="px-8 py-4 flex items-center justify-between">
@@ -220,6 +256,7 @@ export default function ITSMCopilotPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={toggleSearch}
                 className={cn(
                   "p-2 rounded-lg transition-colors",
@@ -233,6 +270,7 @@ export default function ITSMCopilotPage() {
               </button>
               <div className="relative" ref={menuRef}>
                 <button
+                  type="button"
                   onClick={() => setShowMenu((v) => !v)}
                   className={cn(
                     "p-2 rounded-lg transition-colors",
@@ -247,6 +285,7 @@ export default function ITSMCopilotPage() {
                 {showMenu && (
                   <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-card shadow-lg z-50 py-1">
                     <button
+                      type="button"
                       onClick={handleExportChat}
                       disabled={messages.length === 0}
                       className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-foreground/80 hover:bg-secondary/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -255,6 +294,7 @@ export default function ITSMCopilotPage() {
                       Export Chat
                     </button>
                     <button
+                      type="button"
                       onClick={handleClearChat}
                       disabled={messages.length === 0}
                       className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-red-400 hover:bg-secondary/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -269,27 +309,30 @@ export default function ITSMCopilotPage() {
           </div>
 
           {showSearch && (
-            <div className="px-8 pb-3 flex items-center gap-2">
-              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search messages..."
-                className="flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/50 outline-none"
-              />
-              {searchQuery && (
-                <span className="text-[10px] text-muted-foreground shrink-0">
-                  {filteredMessages.length} result{filteredMessages.length !== 1 ? "s" : ""}
-                </span>
-              )}
-              <button
-                onClick={toggleSearch}
-                className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
+            <div className="px-8 pb-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
+                <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search messages..."
+                  className="flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/50 outline-none"
+                />
+                {searchQuery && (
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {filteredMessages.length} result{filteredMessages.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={toggleSearch}
+                  className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -312,7 +355,15 @@ export default function ITSMCopilotPage() {
                 ITIL v4 · Governance Active
               </span>
             </div>
-            {isLoading && (
+            {isRecording && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 ml-auto">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] font-medium text-red-400">
+                  Recording
+                </span>
+              </div>
+            )}
+            {isLoading && !isRecording && (
               <Loader2 className="w-3.5 h-3.5 text-primary animate-spin ml-auto" />
             )}
           </div>
@@ -353,26 +404,48 @@ export default function ITSMCopilotPage() {
 
         <div className="px-6 py-4 border-t border-border shrink-0">
           <div className="max-w-3xl mx-auto">
+            {attachedFileName && (
+              <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20">
+                <FileText className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] text-foreground/70 truncate flex-1">
+                  {attachedFileName}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAttachedFileName(null);
+                    setInput((prev) => {
+                      const idx = prev.indexOf("[Attached file:");
+                      return idx > 0 ? prev.substring(0, idx).trim() : "";
+                    });
+                  }}
+                  className="p-0.5 rounded text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
             {isRecording && (
               <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[11px] text-red-400 font-medium">
-                  Recording... speak now. Click the mic button to stop.
+                <span className="text-[11px] text-red-400 font-medium flex-1">
+                  Listening... speak now
                 </span>
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  className="text-[11px] text-red-400 hover:text-red-300 font-medium underline"
+                >
+                  Stop
+                </button>
               </div>
             )}
             <div className="flex items-end gap-3 bg-secondary/50 border border-border rounded-xl px-4 py-3 focus-within:border-primary/50 transition-colors">
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept=".txt,.log,.csv,.json,.xml,.md,.js,.ts,.py,.java,.cobol,.cbl,.sql,.yaml,.yml"
-                onChange={handleFileChange}
-              />
               <button
+                type="button"
                 onClick={handleFileAttach}
-                className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                title="Attach a file"
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors shrink-0"
+                title="Attach a file (text-based, max 1 MB)"
               >
                 <Paperclip className="w-4 h-4" />
               </button>
@@ -390,14 +463,15 @@ export default function ITSMCopilotPage() {
                 className="flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none resize-none max-h-32"
               />
               <button
+                type="button"
                 onClick={toggleRecording}
                 className={cn(
-                  "p-1 transition-colors shrink-0",
+                  "p-1.5 rounded-md transition-colors shrink-0",
                   isRecording
-                    ? "text-red-400 hover:text-red-300"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-red-400 hover:text-red-300 bg-red-500/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
                 )}
-                title={isRecording ? "Stop recording" : "Record audio"}
+                title={isRecording ? "Stop recording" : "Start voice input (Chrome/Edge)"}
               >
                 {isRecording ? (
                   <MicOff className="w-4 h-4" />
@@ -406,6 +480,7 @@ export default function ITSMCopilotPage() {
                 )}
               </button>
               <button
+                type="button"
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
                 className={cn(
