@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import {
   Send,
   Paperclip,
   Mic,
+  MicOff,
   MoveHorizontal as MoreHorizontal,
   Headphones,
   Search,
@@ -13,16 +14,34 @@ import {
   Activity,
   Loader as Loader2,
   MessageSquare,
+  X,
+  Trash2,
+  Download,
 } from "lucide-react";
 import { ChatMessage } from "@/components/chat-message";
 import { TicketPanel } from "@/components/ticket-panel";
 import { cn } from "@/lib/utils";
 
 export default function ITSMCopilotPage() {
-  const { messages, sendMessage, status } = useChat();
+  const { messages, sendMessage, status, setMessages } = useChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === "streaming" || status === "submitted";
+
+  // Search state
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // More menu state
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -30,10 +49,152 @@ export default function ITSMCopilotPage() {
     }
   }, [messages]);
 
-  const handleSend = () => {
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMenu]);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (showSearch) searchInputRef.current?.focus();
+  }, [showSearch]);
+
+  const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return;
     sendMessage({ text: input.trim() });
     setInput("");
+  }, [input, isLoading, sendMessage]);
+
+  // Send a specific text string as a message (used by ticket panel)
+  const handleSendText = useCallback(
+    (text: string) => {
+      if (!text.trim() || isLoading) return;
+      sendMessage({ text: text.trim() });
+    },
+    [isLoading, sendMessage]
+  );
+
+  // ── File Attach ──
+  const handleFileAttach = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      alert("File must be under 1 MB");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const prefix = `[Attached file: ${file.name}]\n`;
+      setInput((prev) => (prev ? prev + "\n" + prefix + text : prefix + text));
+    } catch {
+      alert("Could not read file. Please attach a text-based file.");
+    }
+    e.target.value = "";
+  };
+
+  // ── Voice Recording (Web Speech API) ──
+  const toggleRecording = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    let finalTranscript = "";
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + " ";
+        } else {
+          interim += transcript;
+        }
+      }
+      setInput(finalTranscript + interim);
+    };
+
+    recognition.onerror = () => {
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
+
+  // ── Search ──
+  const toggleSearch = () => {
+    setShowSearch((v) => !v);
+    if (showSearch) setSearchQuery("");
+  };
+
+  const filteredMessages = searchQuery.trim()
+    ? messages.filter((m) => {
+        const text = m.parts
+          .filter((p): p is { type: "text"; text: string } => p.type === "text")
+          .map((p) => p.text)
+          .join("");
+        return text.toLowerCase().includes(searchQuery.toLowerCase());
+      })
+    : messages;
+
+  // ── More menu actions ──
+  const handleClearChat = () => {
+    setMessages([]);
+    setShowMenu(false);
+  };
+
+  const handleExportChat = () => {
+    const text = messages
+      .map((m) => {
+        const content = m.parts
+          .filter((p): p is { type: "text"; text: string } => p.type === "text")
+          .map((p) => p.text)
+          .join("");
+        return `[${m.role.toUpperCase()}]\n${content}`;
+      })
+      .join("\n\n---\n\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `itsm-copilot-chat-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowMenu(false);
   };
 
   const assistantMsgCount = messages.filter((m) => m.role === "assistant").length;
@@ -58,14 +219,80 @@ export default function ITSMCopilotPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+              <button
+                onClick={toggleSearch}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  showSearch
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                )}
+                title="Search messages"
+              >
                 <Search className="w-4 h-4" />
               </button>
-              <button className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setShowMenu((v) => !v)}
+                  className={cn(
+                    "p-2 rounded-lg transition-colors",
+                    showMenu
+                      ? "bg-primary/10 text-primary"
+                      : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                  )}
+                  title="More options"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                {showMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-card shadow-lg z-50 py-1">
+                    <button
+                      onClick={handleExportChat}
+                      disabled={messages.length === 0}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-foreground/80 hover:bg-secondary/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Export Chat
+                    </button>
+                    <button
+                      onClick={handleClearChat}
+                      disabled={messages.length === 0}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-red-400 hover:bg-secondary/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Clear Chat
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+
+          {showSearch && (
+            <div className="px-8 pb-3 flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search messages..."
+                className="flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/50 outline-none"
+              />
+              {searchQuery && (
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {filteredMessages.length} result{filteredMessages.length !== 1 ? "s" : ""}
+                </span>
+              )}
+              <button
+                onClick={toggleSearch}
+                className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           <div className="px-8 pb-3 flex items-center gap-4">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/50 border border-border/50">
               <Activity className="w-3 h-3 text-emerald-400" />
@@ -108,7 +335,7 @@ export default function ITSMCopilotPage() {
                 </p>
               </div>
             )}
-            {messages.map((msg) => (
+            {filteredMessages.map((msg) => (
               <ChatMessage key={msg.id} message={msg} />
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
@@ -126,8 +353,27 @@ export default function ITSMCopilotPage() {
 
         <div className="px-6 py-4 border-t border-border shrink-0">
           <div className="max-w-3xl mx-auto">
+            {isRecording && (
+              <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[11px] text-red-400 font-medium">
+                  Recording... speak now. Click the mic button to stop.
+                </span>
+              </div>
+            )}
             <div className="flex items-end gap-3 bg-secondary/50 border border-border rounded-xl px-4 py-3 focus-within:border-primary/50 transition-colors">
-              <button className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".txt,.log,.csv,.json,.xml,.md,.js,.ts,.py,.java,.cobol,.cbl,.sql,.yaml,.yml"
+                onChange={handleFileChange}
+              />
+              <button
+                onClick={handleFileAttach}
+                className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                title="Attach a file"
+              >
                 <Paperclip className="w-4 h-4" />
               </button>
               <textarea
@@ -143,8 +389,21 @@ export default function ITSMCopilotPage() {
                 rows={1}
                 className="flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none resize-none max-h-32"
               />
-              <button className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                <Mic className="w-4 h-4" />
+              <button
+                onClick={toggleRecording}
+                className={cn(
+                  "p-1 transition-colors shrink-0",
+                  isRecording
+                    ? "text-red-400 hover:text-red-300"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title={isRecording ? "Stop recording" : "Record audio"}
+              >
+                {isRecording ? (
+                  <MicOff className="w-4 h-4" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
               </button>
               <button
                 onClick={handleSend}
@@ -167,7 +426,7 @@ export default function ITSMCopilotPage() {
         </div>
       </div>
 
-      <TicketPanel />
+      <TicketPanel onSendMessage={handleSendText} />
     </div>
   );
 }

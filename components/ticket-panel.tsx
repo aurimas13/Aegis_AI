@@ -46,7 +46,11 @@ const detailRows = [
   { icon: Clock, label: "Updated", value: ticketInfo.updated },
 ];
 
-export function TicketPanel() {
+interface TicketPanelProps {
+  onSendMessage?: (text: string) => void;
+}
+
+export function TicketPanel({ onSendMessage }: TicketPanelProps) {
   return (
     <div className="flex flex-col h-full w-[320px] border-l border-border bg-card/30 shrink-0">
       <div className="px-5 py-4 border-b border-border shrink-0">
@@ -92,6 +96,11 @@ export function TicketPanel() {
             {relatedArticles.map((article) => (
               <button
                 key={article.id}
+                onClick={() =>
+                  onSendMessage?.(
+                    `Look up knowledge base article ${article.id}: "${article.title}" and summarize the recommended resolution steps.`
+                  )
+                }
                 className="w-full text-left p-3 rounded-lg bg-secondary/40 hover:bg-secondary/70 border border-border/50 transition-colors group"
               >
                 <div className="flex items-start gap-2">
@@ -123,6 +132,11 @@ export function TicketPanel() {
             {suggestedActions.map((action, i) => (
               <button
                 key={i}
+                onClick={() =>
+                  onSendMessage?.(
+                    `Execute suggested action: "${action}". Provide the step-by-step procedure and any risks or rollback steps.`
+                  )
+                }
                 className="w-full flex items-center gap-2.5 p-2.5 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left group"
               >
                 <Zap className="w-3.5 h-3.5 text-primary shrink-0" />
