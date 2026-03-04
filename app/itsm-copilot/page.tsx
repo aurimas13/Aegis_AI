@@ -43,6 +43,7 @@ export default function ITSMCopilotPage() {
   const [isRecording, setIsRecording] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const intentionalStopRef = useRef(false);
 
   // Attached file name for display
   const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
@@ -117,6 +118,8 @@ export default function ITSMCopilotPage() {
   // ── Voice Recording (Web Speech API) ──
   const toggleRecording = useCallback(() => {
     if (isRecording) {
+      // User clicked stop — set flag so onend doesn't auto-restart
+      intentionalStopRef.current = true;
       recognitionRef.current?.stop();
       recognitionRef.current = null;
       setIsRecording(false);
@@ -131,51 +134,69 @@ export default function ITSMCopilotPage() {
       return;
     }
 
-    try {
-      const recognition = new SpeechRecognitionCtor();
-      recognition.lang = "en-US";
-      recognition.interimResults = true;
-      recognition.continuous = true;
-      recognition.maxAlternatives = 1;
+    intentionalStopRef.current = false;
+    let finalTranscript = "";
 
-      let finalTranscript = "";
+    const startRecognition = () => {
+      try {
+        const recognition = new SpeechRecognitionCtor();
+        recognition.lang = "en-US";
+        recognition.interimResults = true;
+        recognition.continuous = true;
+        recognition.maxAlternatives = 1;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onresult = (event: any) => {
-        let interim = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + " ";
-          } else {
-            interim += transcript;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onresult = (event: any) => {
+          let interim = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + " ";
+            } else {
+              interim += transcript;
+            }
           }
-        }
-        setInput(finalTranscript + interim);
-      };
+          setInput(finalTranscript + interim);
+        };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
-        setIsRecording(false);
-        recognitionRef.current = null;
-        if (event.error === "not-allowed") {
-          alert("Microphone access was denied. Please allow microphone access in your browser settings and try again.");
-        }
-      };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onerror = (event: any) => {
+          console.error("Speech recognition error:", event.error);
+          if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+            intentionalStopRef.current = true; // prevent auto-restart
+            setIsRecording(false);
+            recognitionRef.current = null;
+            alert("Microphone access was denied. Please allow microphone access in your browser settings and try again.");
+          }
+          // For "no-speech" and "network" errors, let onend handle the auto-restart
+        };
 
-      recognition.onend = () => {
-        setIsRecording(false);
-        recognitionRef.current = null;
-      };
+        recognition.onend = () => {
+          // Auto-restart if the user didn't intentionally stop
+          if (!intentionalStopRef.current) {
+            try {
+              recognition.start();
+            } catch {
+              // If restart fails, stop gracefully
+              setIsRecording(false);
+              recognitionRef.current = null;
+            }
+          } else {
+            setIsRecording(false);
+            recognitionRef.current = null;
+          }
+        };
 
-      recognitionRef.current = recognition;
-      recognition.start();
-      setIsRecording(true);
-    } catch (err) {
-      console.error("Failed to start speech recognition:", err);
-      alert("Failed to start voice recording. Please make sure you're using Chrome or Edge.");
-    }
+        recognitionRef.current = recognition;
+        recognition.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error("Failed to start speech recognition:", err);
+        alert("Failed to start voice recording. Please make sure you're using Chrome or Edge.");
+      }
+    };
+
+    startRecognition();
   }, [isRecording]);
 
   // ── Search ──
