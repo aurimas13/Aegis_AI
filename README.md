@@ -1,6 +1,6 @@
 # Aegis AI: Enterprise Modernization & Governance Platform
 
-**A proof-of-concept MVP for Tier-1 Enterprise IT Services and Infrastructure Management**
+**A PoC MVP for Tier-1 Enterprise IT Services and Infrastructure Management**
 
 [![Next.js](https://img.shields.io/badge/Next.js-13.5-black?logo=next.js)](https://nextjs.org/)
 [![Vercel AI SDK](https://img.shields.io/badge/Vercel_AI_SDK-v4-blue?logo=vercel)](https://sdk.vercel.ai/)
