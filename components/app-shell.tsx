@@ -3,10 +3,16 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Code as Code2, MessageSquareText, ChevronLeft, ChevronRight, Zap, User } from "lucide-react";
+import { Code as Code2, MessageSquareText, ChevronLeft, ChevronRight, Zap, User, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
+  {
+    name: "Home",
+    href: "/",
+    icon: Home,
+    exact: true,
+  },
   {
     name: "Legacy Modernization",
     href: "/legacy-modernization",
@@ -55,9 +61,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
           <div className="space-y-1 mt-1">
             {navigation.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                pathname?.startsWith(item.href + "/");
+              const exact = "exact" in item && item.exact;
+              const isActive = exact
+                ? pathname === item.href
+                : pathname === item.href ||
+                  pathname?.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
