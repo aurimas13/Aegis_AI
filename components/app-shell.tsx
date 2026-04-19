@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Code as Code2, MessageSquareText, ChevronLeft, ChevronRight, Zap, User, Home } from "lucide-react";
+import { Code as Code2, MessageSquareText, ChevronLeft, ChevronRight, Zap, User, Home, FileText, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -22,6 +22,11 @@ const navigation = [
     name: "ITSM Copilot",
     href: "/itsm-copilot",
     icon: MessageSquareText,
+  },
+  {
+    name: "Case Study",
+    href: "/case-study",
+    icon: FileText,
   },
 ];
 
@@ -97,6 +102,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-border p-2 shrink-0 space-y-1">
+          <a
+            href="https://aurimas.io"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            title={collapsed ? "Back to aurimas.io" : undefined}
+          >
+            <ExternalLink className="w-[18px] h-[18px] shrink-0" />
+            {!collapsed && <span>aurimas.io</span>}
+          </a>
           {!collapsed && (
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary/40">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
