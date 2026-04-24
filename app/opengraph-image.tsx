@@ -107,23 +107,24 @@ export default async function Image() {
 
         {/* Middle: headline */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '8px 16px',
-              background: 'rgba(19,114,103,0.10)',
-              border: '1px solid rgba(19,114,103,0.25)',
-              borderRadius: 999,
-              width: 'fit-content',
-              fontSize: 18,
-              color: '#137267',
-              fontWeight: 600,
-              letterSpacing: 0.5,
-            }}
-          >
-            Governance-First Enterprise AI
+          <div style={{ display: 'flex' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '8px 16px',
+                background: 'rgba(19,114,103,0.10)',
+                border: '1px solid rgba(19,114,103,0.25)',
+                borderRadius: 999,
+                fontSize: 18,
+                color: '#137267',
+                fontWeight: 600,
+                letterSpacing: 0.5,
+              }}
+            >
+              Governance-First Enterprise AI
+            </div>
           </div>
           <div
             style={{
