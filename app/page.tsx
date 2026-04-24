@@ -3,10 +3,7 @@ import {
   Code as Code2,
   MessageSquareText,
   Shield,
-  Zap,
   ArrowRight,
-  Activity,
-  BarChart3,
   TrendingDown,
   Clock,
   Users,
@@ -48,10 +45,10 @@ const modules = [
 ];
 
 const metrics = [
-  { icon: TrendingDown, label: "Shadow AI Eliminated", value: "100%", sub: "All AI usage governed" },
-  { icon: Clock, label: "Avg. Cycle Time Cut", value: "67%", sub: "Modernization turnaround" },
-  { icon: Users, label: "Teams Deployed", value: "13", sub: "Across 5 business units" },
-  { icon: DollarSign, label: "Cost Visibility", value: "Real-time", sub: "Token-level attribution" },
+  { icon: TrendingDown, label: "Shadow AI eliminated", value: "100%", sub: "Every call flows through a governed path" },
+  { icon: Clock, label: "Modernization cycle cut", value: "67%", sub: "Average turnaround across pilot teams" },
+  { icon: Users, label: "Teams onboarded", value: "13", sub: "Spanning 5 business units" },
+  { icon: DollarSign, label: "Cost visibility", value: "Real-time", sub: "Attributed at the token level" },
 ];
 
 const costData = [
@@ -64,11 +61,11 @@ const costData = [
 ];
 
 const governanceEvents = [
-  { time: "14:23", status: "ok", msg: "Modernization job completed — COBOL → Python, 847 tokens, $0.008", user: "Platform Eng" },
+  { time: "14:23", status: "ok", msg: "Modernization job completed — COBOL → Python, 847 tokens, $0.008", user: "Platform Engineering" },
   { time: "14:18", status: "ok", msg: "ITSM query resolved — incident triage, 312 tokens, $0.003", user: "Service Desk" },
-  { time: "14:12", status: "warn", msg: "PII scan flagged potential SSN pattern — response redacted", user: "Compliance" },
-  { time: "14:05", status: "ok", msg: "Modernization job completed — FORTRAN → Python, 1,204 tokens, $0.012", user: "Platform Eng" },
-  { time: "13:58", status: "ok", msg: "ITSM escalation recommendation accepted — P1 routing", user: "Service Desk" },
+  { time: "14:12", status: "warn", msg: "PII scan flagged a potential SSN pattern — response redacted automatically", user: "Compliance" },
+  { time: "14:05", status: "ok", msg: "Modernization job completed — FORTRAN → Python, 1,204 tokens, $0.012", user: "Platform Engineering" },
+  { time: "13:58", status: "ok", msg: "ITSM escalation recommendation accepted — routed as P1", user: "Service Desk" },
 ];
 
 const techStack = [
@@ -108,33 +105,34 @@ export default function Home() {
               Governance-First Enterprise AI
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-3">
-            Aegis AI
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight mb-4">
+            Enterprise AI, with accountability built in.
           </h1>
-          <p className="text-[16px] font-medium text-foreground/90 max-w-2xl mx-auto mb-2">
-            AI governance, observability, and cost tracking for enterprise IT —
-            applied to legacy modernization and service desk automation.
+          <p className="text-[17px] font-medium text-foreground/90 max-w-2xl mx-auto mb-3 leading-relaxed">
+            Aegis AI brings governance, observability, and real-time cost tracking
+            to two of the highest-leverage workflows in enterprise IT: legacy modernization
+            and service-desk automation.
           </p>
-          <p className="text-[13px] text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Enterprise AI adoption stalls because nobody tracks who&apos;s using what,
-            costing what, with what risk. Aegis makes every AI call auditable,
-            every token costed, and every response governed — by default.
+          <p className="text-[14px] text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            Most enterprises don&apos;t fail at AI adoption — they fail at AI accountability.
+            Aegis makes every call auditable, every token accounted for, and every response
+            governed by default, so builders ship faster and compliance teams sleep at night.
           </p>
         </div>
 
         {/* ── Key Metrics ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14">
           {metrics.map((m) => (
             <div
               key={m.label}
-              className="rounded-xl border border-border bg-card/50 px-4 py-4 text-center"
+              className="rounded-xl border border-border bg-card px-4 py-5 text-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
             >
               <m.icon className="w-5 h-5 text-primary mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">{m.value}</p>
-              <p className="text-[11px] font-medium text-foreground/70 mt-0.5">
+              <p className="text-2xl md:text-3xl font-bold text-foreground">{m.value}</p>
+              <p className="text-[11px] font-semibold text-foreground/80 mt-1">
                 {m.label}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
+              <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
                 {m.sub}
               </p>
             </div>
@@ -150,7 +148,7 @@ export default function Home() {
             <Link
               key={mod.href}
               href={mod.href}
-              className="group flex flex-col rounded-xl border border-border bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all duration-200 overflow-hidden"
+              className="group flex flex-col rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden shadow-sm"
             >
               <div className="px-5 pt-5 pb-3">
                 <div className="flex items-center gap-3 mb-2.5">
@@ -188,7 +186,7 @@ export default function Home() {
         </h2>
         <div className="grid md:grid-cols-5 gap-5 mb-14">
           {/* Cost Tracking Chart */}
-          <div className="md:col-span-3 rounded-xl border border-border bg-card/50 px-5 py-4">
+          <div className="md:col-span-3 rounded-xl border border-border bg-card px-5 py-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-[13px] font-semibold text-foreground">
@@ -233,7 +231,7 @@ export default function Home() {
           </div>
 
           {/* Governance Event Log */}
-          <div className="md:col-span-2 rounded-xl border border-border bg-card/50 px-5 py-4">
+          <div className="md:col-span-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Eye className="w-4 h-4 text-primary" />
               <p className="text-[13px] font-semibold text-foreground">
@@ -244,9 +242,9 @@ export default function Home() {
               {governanceEvents.map((evt, i) => (
                 <div key={i} className="flex items-start gap-2">
                   {evt.status === "ok" ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 mt-0.5 shrink-0" />
                   ) : (
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-700 mt-0.5 shrink-0" />
                   )}
                   <div className="min-w-0">
                     <p className="text-[11px] text-foreground/80 leading-snug">
@@ -283,12 +281,12 @@ export default function Home() {
         </div>
 
         {/* ── Case Study CTA ── */}
-        <div className="rounded-xl border border-primary/20 bg-primary/5 px-6 py-5 flex items-center justify-between flex-wrap gap-4 mb-10">
+        <div className="rounded-xl border border-primary/30 bg-primary/5 px-6 py-5 flex items-center justify-between flex-wrap gap-4 mb-10 shadow-sm">
           <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-primary" />
+            <FileText className="w-5 h-5 text-primary shrink-0" />
             <div>
-              <p className="text-[13px] font-semibold text-foreground">
-                Read the Full Case Study
+              <p className="text-[14px] font-semibold text-foreground">
+                Read the full case study
               </p>
               <p className="text-[12px] text-muted-foreground">
                 Problem, approach, architecture decisions, outcomes, and lessons learned.
@@ -297,22 +295,34 @@ export default function Home() {
           </div>
           <Link
             href="/case-study"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-colors shadow-sm"
           >
-            View Case Study
+            View case study
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {/* ── Footer ── */}
-        <div className="text-center pb-4">
-          <div className="inline-flex items-center gap-2 text-muted-foreground/50">
-            <Zap className="w-3.5 h-3.5" />
-            <span className="text-[11px]">
-              Every AI invocation is tracked. Every token is costed. Every
+        <div className="text-center pb-4 border-t border-border pt-8">
+          <div className="inline-flex items-center gap-2 text-muted-foreground mb-2">
+            <Shield className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] italic">
+              Every AI invocation is tracked. Every token is accounted for. Every
               response carries a governance card.
             </span>
           </div>
+          <p className="text-[11px] text-muted-foreground/70">
+            Built by{" "}
+            <a
+              href="https://aurimas.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              Aurimas Nausedas
+            </a>{" "}
+            — Fractional AI Product Manager &amp; AI Architect.
+          </p>
         </div>
       </div>
     </div>

@@ -29,29 +29,29 @@ export function GovernanceCard({ metrics }: { metrics: GovernanceMetrics }) {
       icon: Coins,
       label: "Tokens Used",
       value: metrics.tokensUsed.toLocaleString(),
-      color: "text-sky-400",
-      bg: "bg-sky-400/10",
+      color: "text-sky-700",
+      bg: "bg-sky-100",
     },
     {
       icon: Coins,
       label: "Est. Cost",
       value: metrics.cost,
-      color: "text-amber-400",
-      bg: "bg-amber-400/10",
+      color: "text-amber-700",
+      bg: "bg-amber-100",
     },
     {
       icon: Clock,
       label: "ROI Time Saved",
       value: `${metrics.roiTimeSaved} min`,
-      color: "text-emerald-400",
-      bg: "bg-emerald-400/10",
+      color: "text-emerald-700",
+      bg: "bg-emerald-100",
     },
     {
       icon: ScanEye,
       label: "PII Check",
       value: metrics.piiCheck,
-      color: "text-emerald-400",
-      bg: "bg-emerald-400/10",
+      color: "text-emerald-700",
+      bg: "bg-emerald-100",
     },
   ];
 
@@ -62,8 +62,8 @@ export function GovernanceCard({ metrics }: { metrics: GovernanceMetrics }) {
         <span className="text-[10px] font-semibold text-primary uppercase tracking-widest">
           Governance & Compliance
         </span>
-        <CheckCircle2 className="w-3 h-3 text-emerald-400 ml-auto" />
-        <span className="text-[10px] text-emerald-400 font-medium">
+        <CheckCircle2 className="w-3 h-3 text-emerald-700 ml-auto" />
+        <span className="text-[10px] text-emerald-700 font-medium">
           Compliant
         </span>
       </div>

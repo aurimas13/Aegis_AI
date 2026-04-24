@@ -259,19 +259,19 @@ export default function ITSMCopilotPage() {
         onChange={handleFileChange}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="border-b border-border shrink-0">
-          <div className="px-8 py-4 flex items-center justify-between">
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
+        <header className="border-b border-border shrink-0 bg-card">
+          <div className="px-4 md:px-8 py-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Headphones className="w-5 h-5 text-primary" />
               </div>
-              <div>
-                <h1 className="text-lg font-semibold text-foreground tracking-tight">
+              <div className="min-w-0">
+                <h1 className="text-base md:text-lg font-semibold text-foreground tracking-tight truncate">
                   Governed ITSM Copilot
                 </h1>
-                <p className="text-[12px] text-muted-foreground">
-                  AI-assisted incident management with governance controls
+                <p className="hidden sm:block text-[12px] text-muted-foreground">
+                  AI-assisted incident management with embedded governance controls
                 </p>
               </div>
             </div>
@@ -318,7 +318,7 @@ export default function ITSMCopilotPage() {
                       type="button"
                       onClick={handleClearChat}
                       disabled={messages.length === 0}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-red-400 hover:bg-secondary/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       Clear Chat
@@ -330,7 +330,7 @@ export default function ITSMCopilotPage() {
           </div>
 
           {showSearch && (
-            <div className="px-8 pb-3">
+            <div className="px-4 md:px-8 pb-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
                 <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 <input
@@ -357,41 +357,41 @@ export default function ITSMCopilotPage() {
             </div>
           )}
 
-          <div className="px-8 pb-3 flex items-center gap-4">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/50 border border-border/50">
-              <Activity className="w-3 h-3 text-emerald-400" />
-              <span className="text-[10px] font-medium text-emerald-400">
+          <div className="px-4 md:px-8 pb-3 flex items-center gap-2 md:gap-3 overflow-x-auto scrollbar-thin">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 shrink-0">
+              <Activity className="w-3 h-3 text-emerald-700" />
+              <span className="text-[10px] font-semibold text-emerald-700">
                 {isLoading ? "Streaming" : "Ready"}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/50 border border-border/50">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary border border-border shrink-0">
               <MessageSquare className="w-3 h-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                 {userMsgCount} queries · {assistantMsgCount} responses
               </span>
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/50 border border-border/50">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 shrink-0">
               <Shield className="w-3 h-3 text-primary" />
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-primary font-medium whitespace-nowrap">
                 ITIL v4 · Governance Active
               </span>
             </div>
             {isRecording && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 ml-auto">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[10px] font-medium text-red-400">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-100 border border-red-200 ml-auto shrink-0">
+                <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                <span className="text-[10px] font-semibold text-red-700">
                   Recording
                 </span>
               </div>
             )}
             {isLoading && !isRecording && (
-              <Loader2 className="w-3.5 h-3.5 text-primary animate-spin ml-auto" />
+              <Loader2 className="w-3.5 h-3.5 text-primary animate-spin ml-auto shrink-0" />
             )}
           </div>
         </header>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+          <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-6">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -423,7 +423,7 @@ export default function ITSMCopilotPage() {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-border shrink-0">
+        <div className="px-4 md:px-6 py-4 border-t border-border shrink-0 bg-card">
           <div className="max-w-3xl mx-auto">
             {attachedFileName && (
               <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20">
@@ -447,15 +447,15 @@ export default function ITSMCopilotPage() {
               </div>
             )}
             {isRecording && (
-              <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[11px] text-red-400 font-medium flex-1">
-                  Listening... speak now
+              <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200">
+                <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                <span className="text-[11px] text-red-700 font-medium flex-1">
+                  Listening… speak now.
                 </span>
                 <button
                   type="button"
                   onClick={toggleRecording}
-                  className="text-[11px] text-red-400 hover:text-red-300 font-medium underline"
+                  className="text-[11px] text-red-700 hover:text-red-800 font-semibold underline"
                 >
                   Stop
                 </button>
@@ -489,7 +489,7 @@ export default function ITSMCopilotPage() {
                 className={cn(
                   "p-1.5 rounded-md transition-colors shrink-0",
                   isRecording
-                    ? "text-red-400 hover:text-red-300 bg-red-500/10"
+                    ? "text-red-700 hover:text-red-800 bg-red-100"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
                 )}
                 title={isRecording ? "Stop recording" : "Start voice input (Chrome/Edge)"}
@@ -514,15 +514,17 @@ export default function ITSMCopilotPage() {
                 <Send className="w-4 h-4" />
               </button>
             </div>
-            <p className="mt-2 text-center text-[11px] text-muted-foreground/50">
+            <p className="mt-2 text-center text-[11px] text-muted-foreground/70">
               All actions are governed by ITIL v4 compliance policies and require
-              appropriate authorization levels
+              appropriate authorization levels.
             </p>
           </div>
         </div>
       </div>
 
-      <TicketPanel onSendMessage={handleSendText} />
+      <div className="hidden lg:flex">
+        <TicketPanel onSendMessage={handleSendText} />
+      </div>
     </div>
   );
 }

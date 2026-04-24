@@ -4,58 +4,32 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 84% 5%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 84% 5%;
+    /* Professional cream / ivory palette — inspired by premium consulting brands */
+    --background: 38 33% 97%;         /* warm ivory #FBF8F2 */
+    --foreground: 220 26% 14%;        /* deep slate #1B2230 */
+    --card: 0 0% 100%;                /* pure white for elevated surfaces */
+    --card-foreground: 220 26% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 84% 5%;
-    --primary: 173 80% 40%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 173 80% 40%;
-    --chart-1: 173 80% 40%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 197 37% 24%;
-    --chart-5: 43 74% 66%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222 84% 5%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 173 80% 40%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 215 25% 15%;
-    --muted-foreground: 217 10% 55%;
-    --accent: 173 80% 40%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 25% 17%;
-    --input: 215 25% 17%;
-    --ring: 173 80% 40%;
-    --chart-1: 173 80% 40%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 197 37% 24%;
-    --chart-5: 43 74% 66%;
+    --popover-foreground: 220 26% 14%;
+    --primary: 174 72% 26%;           /* rich deep teal #137267 — AI / trust / mature */
+    --primary-foreground: 38 33% 97%;
+    --secondary: 36 22% 93%;          /* warm off-cream #EFEAE0 */
+    --secondary-foreground: 220 26% 14%;
+    --muted: 36 22% 93%;
+    --muted-foreground: 220 12% 42%;  /* sophisticated mid-grey #5F6779 */
+    --accent: 36 45% 88%;              /* soft cream accent */
+    --accent-foreground: 220 26% 14%;
+    --destructive: 0 72% 48%;         /* deeper red for contrast on light */
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 18% 86%;              /* warm light border #E3DDD2 */
+    --input: 36 18% 86%;
+    --ring: 174 72% 26%;
+    --chart-1: 174 72% 26%;
+    --chart-2: 158 64% 40%;
+    --chart-3: 35 78% 55%;
+    --chart-4: 220 26% 24%;
+    --chart-5: 43 74% 50%;
+    --radius: 0.625rem;
   }
 }
 

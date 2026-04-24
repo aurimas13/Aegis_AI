@@ -118,14 +118,14 @@ export default function LegacyModernizationPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-8 py-5 border-b border-border shrink-0">
-        <div className="flex items-center justify-between">
+      <header className="px-4 sm:px-6 md:px-8 py-4 md:py-5 border-b border-border shrink-0 bg-card">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-foreground tracking-tight">
+            <h1 className="text-lg md:text-xl font-semibold text-foreground tracking-tight">
               Legacy Modernization
             </h1>
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              Transform legacy code to modern standards with AI-powered analysis
+            <p className="mt-1 text-[12px] md:text-[13px] text-muted-foreground">
+              Translate legacy code to modern Python with AI-powered analysis, docstrings, and tests.
             </p>
           </div>
           <div className="hidden xl:flex items-center gap-3">
@@ -149,8 +149,8 @@ export default function LegacyModernizationPage() {
         </div>
       </header>
 
-      <div className="flex-1 p-6 flex gap-3 min-h-0">
-        <div className="flex-1 min-w-0">
+      <div className="flex-1 p-4 md:p-6 flex flex-col lg:flex-row gap-4 min-h-0">
+        <div className="flex-1 min-w-0 min-h-[320px] lg:min-h-0">
           <CodePanel
             title="Source Code"
             language={sourceLang}
@@ -162,29 +162,36 @@ export default function LegacyModernizationPage() {
           />
         </div>
 
-        <div className="flex flex-col items-center justify-center gap-4 px-2 shrink-0">
+        <div className="flex lg:flex-col items-center justify-center gap-3 lg:gap-4 px-0 lg:px-2 shrink-0 py-2 lg:py-0">
           <button
+            type="button"
             onClick={handleTransform}
             disabled={isTransforming}
             className={cn(
-              "group relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300",
+              "group relative flex items-center justify-center w-14 h-14 rounded-xl transition-all duration-300 shadow-sm",
               isTransforming
                 ? "bg-primary/20 cursor-wait"
-                : "bg-primary/10 hover:bg-primary/20 hover:scale-105 active:scale-95"
+                : "bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95"
             )}
+            aria-label={isTransforming ? "Modernizing…" : "Transform code"}
           >
             {isTransforming ? (
-              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+              <Loader2 className="w-5 h-5 text-primary-foreground animate-spin" />
             ) : (
-              <ArrowRight className="w-5 h-5 text-primary transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="w-5 h-5 text-primary-foreground transition-transform group-hover:translate-x-0.5 lg:rotate-0 rotate-90" />
             )}
           </button>
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
             {isTransforming ? "Modernizing" : "Transform"}
           </span>
+          {errorMsg && (
+            <span className="hidden lg:block text-[10px] text-destructive text-center max-w-[120px] leading-snug">
+              {errorMsg}
+            </span>
+          )}
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 min-h-[320px] lg:min-h-0">
           <CodePanel
             title="Modernized Output"
             language={targetLang}

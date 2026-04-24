@@ -52,18 +52,18 @@ interface TicketPanelProps {
 
 export function TicketPanel({ onSendMessage }: TicketPanelProps) {
   return (
-    <div className="flex flex-col h-full w-[320px] border-l border-border bg-card/30 shrink-0">
+    <div className="flex flex-col h-full w-[320px] border-l border-border bg-card shrink-0">
       <div className="px-5 py-4 border-b border-border shrink-0">
         <div className="flex items-center justify-between">
           <span className="text-[13px] font-semibold text-foreground">
             {ticketInfo.id}
           </span>
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700 border border-red-200">
             {ticketInfo.priority}
           </span>
         </div>
-        <span className="mt-1 inline-flex items-center gap-1.5 text-[12px] text-amber-400">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+        <span className="mt-1 inline-flex items-center gap-1.5 text-[12px] text-amber-700 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
           {ticketInfo.status}
         </span>
       </div>
