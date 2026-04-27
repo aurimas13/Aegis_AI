@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, FormEvent } from "react";
+import Link from "next/link";
 import {
   Boxes,
   Search,
@@ -11,139 +12,30 @@ import {
   Pause,
   Sparkles,
   Plus,
-  ExternalLink,
+  ArrowRight,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { PageFooter } from "@/components/page-footer";
-
-type Risk = "Low" | "Medium" | "High";
-type Status = "Production" | "Staging" | "Deprecated";
-
-interface Model {
-  id: string;
-  name: string;
-  provider: string;
-  version: string;
-  owner: string;
-  risk: Risk;
-  status: Status;
-  lastReview: string;
-  monthlySpend: number;
-  callsLast30d: number;
-}
-
-const models: Model[] = [
-  {
-    id: "mdl_01",
-    name: "GPT-4o",
-    provider: "OpenAI",
-    version: "2024-08-06",
-    owner: "Platform Engineering",
-    risk: "Medium",
-    status: "Production",
-    lastReview: "2026-04-12",
-    monthlySpend: 1842,
-    callsLast30d: 12473,
-  },
-  {
-    id: "mdl_02",
-    name: "GPT-4o-mini",
-    provider: "OpenAI",
-    version: "2024-07-18",
-    owner: "Service Desk",
-    risk: "Low",
-    status: "Production",
-    lastReview: "2026-04-19",
-    monthlySpend: 612,
-    callsLast30d: 38291,
-  },
-  {
-    id: "mdl_03",
-    name: "Claude 3.5 Sonnet",
-    provider: "Anthropic",
-    version: "20241022",
-    owner: "Data & Analytics",
-    risk: "Medium",
-    status: "Production",
-    lastReview: "2026-03-28",
-    monthlySpend: 487,
-    callsLast30d: 4128,
-  },
-  {
-    id: "mdl_04",
-    name: "Claude 3 Haiku",
-    provider: "Anthropic",
-    version: "20240307",
-    owner: "Service Desk",
-    risk: "Low",
-    status: "Production",
-    lastReview: "2026-04-02",
-    monthlySpend: 124,
-    callsLast30d: 9742,
-  },
-  {
-    id: "mdl_05",
-    name: "Llama 3.1 70B",
-    provider: "Meta · self-hosted",
-    version: "3.1",
-    owner: "Security",
-    risk: "High",
-    status: "Staging",
-    lastReview: "2026-04-23",
-    monthlySpend: 0,
-    callsLast30d: 2104,
-  },
-  {
-    id: "mdl_06",
-    name: "Mistral Large",
-    provider: "Mistral",
-    version: "2407",
-    owner: "Platform Engineering",
-    risk: "Medium",
-    status: "Staging",
-    lastReview: "2026-04-08",
-    monthlySpend: 41,
-    callsLast30d: 312,
-  },
-  {
-    id: "mdl_07",
-    name: "text-embedding-3-large",
-    provider: "OpenAI",
-    version: "1.0",
-    owner: "Data & Analytics",
-    risk: "Low",
-    status: "Production",
-    lastReview: "2026-03-15",
-    monthlySpend: 89,
-    callsLast30d: 142091,
-  },
-  {
-    id: "mdl_08",
-    name: "GPT-3.5-turbo",
-    provider: "OpenAI",
-    version: "0125",
-    owner: "Service Desk",
-    risk: "Low",
-    status: "Deprecated",
-    lastReview: "2026-02-01",
-    monthlySpend: 12,
-    callsLast30d: 84,
-  },
-  {
-    id: "mdl_09",
-    name: "Whisper Large-v3",
-    provider: "OpenAI",
-    version: "v3",
-    owner: "Service Desk",
-    risk: "Low",
-    status: "Production",
-    lastReview: "2026-04-21",
-    monthlySpend: 67,
-    callsLast30d: 1842,
-  },
-];
+import {
+  Modal,
+  Field,
+  inputCls,
+  selectCls,
+  textareaCls,
+  PrimaryButton,
+  GhostButton,
+} from "@/components/modal";
+import {
+  Model,
+  Risk,
+  Status,
+  listModels,
+  addModel,
+  resetModels,
+} from "@/lib/models-data";
 
 const RISK_COLOR: Record<Risk, string> = {
   Low: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -151,20 +43,29 @@ const RISK_COLOR: Record<Risk, string> = {
   High: "bg-red-100 text-red-700 border-red-200",
 };
 
-const STATUS_ICON: Record<Status, { Icon: typeof CheckCircle2; cls: string; label: string }> = {
-  Production: { Icon: CheckCircle2, cls: "text-emerald-700", label: "Production" },
-  Staging: { Icon: AlertCircle, cls: "text-amber-700", label: "Staging" },
-  Deprecated: { Icon: Pause, cls: "text-muted-foreground", label: "Deprecated" },
+const STATUS_ICON: Record<Status, { Icon: typeof CheckCircle2; cls: string }> = {
+  Production: { Icon: CheckCircle2, cls: "text-emerald-700" },
+  Staging: { Icon: AlertCircle, cls: "text-amber-700" },
+  Deprecated: { Icon: Pause, cls: "text-muted-foreground" },
 };
 
 type SortKey = "name" | "monthlySpend" | "callsLast30d" | "lastReview" | "risk";
 
 export default function ModelsPage() {
+  const [models, setModels] = useState<Model[]>([]);
   const [search, setSearch] = useState("");
   const [riskFilter, setRiskFilter] = useState<"All" | Risk>("All");
   const [statusFilter, setStatusFilter] = useState<"All" | Status>("All");
   const [sortBy, setSortBy] = useState<SortKey>("monthlySpend");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [registerOpen, setRegisterOpen] = useState(false);
+
+  // Hydrate from localStorage on mount
+  useEffect(() => {
+    setModels(listModels());
+  }, []);
+
+  const refresh = () => setModels(listModels());
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -182,13 +83,21 @@ export default function ModelsPage() {
       return String(av).localeCompare(String(bv)) * dir;
     });
     return list;
-  }, [search, riskFilter, statusFilter, sortBy, sortDir]);
+  }, [models, search, riskFilter, statusFilter, sortBy, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortBy === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortBy(key);
       setSortDir("desc");
+    }
+  };
+
+  const handleResetSeed = () => {
+    if (confirm("Reset the model registry to default demo data? This will discard your custom models and edits.")) {
+      resetModels();
+      refresh();
+      toast.success("Model registry reset", { description: "Defaults restored." });
     }
   };
 
@@ -199,29 +108,36 @@ export default function ModelsPage() {
           icon={Boxes}
           eyebrow="Governance"
           title="Model Registry"
-          description="Every AI model used in the enterprise — owners, risk tiers, status, and usage. Single source of truth for what's running where."
+          description="Every AI model used in the enterprise — owners, risk tiers, status, and usage. Single source of truth for what's running where. Add, edit, and delete models — changes persist locally for this demo."
           actions={
-            <button
-              type="button"
-              onClick={() =>
-                toast.success("Model onboarding started", {
-                  description: "We'll walk you through risk assessment and policy mapping.",
-                })
-              }
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Register Model
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleResetSeed}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-[12px] font-medium text-foreground hover:bg-secondary transition-colors shadow-sm"
+                title="Reset to default demo data"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setRegisterOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Register Model
+              </button>
+            </>
           }
         />
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <SumCard label="Total Models" value={String(models.length)} sub="Across 4 providers" />
+          <SumCard label="Total Models" value={String(models.length)} sub={`Across ${new Set(models.map((m) => m.provider.split(" ")[0])).size} providers`} />
           <SumCard label="In Production" value={String(models.filter((m) => m.status === "Production").length)} sub={`${models.filter((m) => m.status === "Staging").length} in staging`} />
-          <SumCard label="High-Risk Models" value={String(models.filter((m) => m.risk === "High").length)} sub="Restricted to 1 team" />
-          <SumCard label="Last Review" value="2 days ago" sub="100% review compliance" />
+          <SumCard label="High-Risk Models" value={String(models.filter((m) => m.risk === "High").length)} sub="Restricted to scoped teams" />
+          <SumCard label="Custom Models" value={String(models.filter((m) => m.custom).length)} sub="Added in this session" />
         </div>
 
         {/* Filters */}
@@ -281,20 +197,25 @@ export default function ModelsPage() {
                       className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
                     >
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                        <Link href={`/models/${m.id}`} className="flex items-center gap-2 group">
                           <Sparkles className="w-3.5 h-3.5 text-primary" />
                           <div>
-                            <p className="font-semibold text-foreground">{m.name}</p>
+                            <p className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
+                              {m.name}
+                              {m.custom && (
+                                <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-primary/10 text-primary uppercase tracking-wider">
+                                  Custom
+                                </span>
+                              )}
+                            </p>
                             <p className="text-[10px] text-muted-foreground">v{m.version}</p>
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-foreground/80">{m.provider}</td>
                       <td className="px-4 py-3 text-foreground/80">{m.owner}</td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${RISK_COLOR[m.risk]}`}
-                        >
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${RISK_COLOR[m.risk]}`}>
                           {m.risk}
                         </span>
                       </td>
@@ -312,18 +233,13 @@ export default function ModelsPage() {
                       </td>
                       <td className="px-4 py-3 text-foreground/70">{m.lastReview}</td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            toast.message(`Opening ${m.name}`, {
-                              description: "Model detail page coming next sprint.",
-                            })
-                          }
-                          className="text-primary hover:underline text-[11px] font-semibold inline-flex items-center gap-1"
+                        <Link
+                          href={`/models/${m.id}`}
+                          className="inline-flex items-center gap-1 text-primary hover:underline text-[11px] font-semibold"
                         >
                           View
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
                       </td>
                     </tr>
                   );
@@ -342,7 +258,132 @@ export default function ModelsPage() {
 
         <PageFooter compact />
       </div>
+
+      <RegisterModelDialog
+        open={registerOpen}
+        onClose={() => setRegisterOpen(false)}
+        onCreated={() => {
+          refresh();
+          setRegisterOpen(false);
+        }}
+      />
     </div>
+  );
+}
+
+function RegisterModelDialog({
+  open,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [provider, setProvider] = useState("OpenAI");
+  const [version, setVersion] = useState("");
+  const [owner, setOwner] = useState("Platform Engineering");
+  const [risk, setRisk] = useState<Risk>("Medium");
+  const [status, setStatus] = useState<Status>("Staging");
+  const [description, setDescription] = useState("");
+
+  // reset on open
+  useEffect(() => {
+    if (open) {
+      setName("");
+      setProvider("OpenAI");
+      setVersion("");
+      setOwner("Platform Engineering");
+      setRisk("Medium");
+      setStatus("Staging");
+      setDescription("");
+    }
+  }, [open]);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !version.trim() || !owner.trim()) {
+      toast.error("Fill in name, version, and owner.");
+      return;
+    }
+    const created = addModel({
+      name: name.trim(),
+      provider,
+      version: version.trim(),
+      owner: owner.trim(),
+      risk,
+      status,
+      description: description.trim() || undefined,
+    });
+    toast.success(`Registered · ${created.name}`, {
+      description: `Risk tier ${created.risk} · ${created.status}. Default policies attached automatically.`,
+    });
+    onCreated();
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Register a new AI model"
+      description="Add a model to the governance registry. We'll auto-attach the relevant default policies based on risk tier."
+      size="lg"
+      footer={
+        <>
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
+          <PrimaryButton type="submit" onClick={() => {
+            const form = document.getElementById("register-model-form") as HTMLFormElement | null;
+            form?.requestSubmit();
+          }}>
+            <Plus className="w-3.5 h-3.5" />
+            Register model
+          </PrimaryButton>
+        </>
+      }
+    >
+      <form id="register-model-form" onSubmit={submit}>
+        <div className="grid md:grid-cols-2 gap-x-4">
+          <Field label="Model name" hint="The display name shown across the platform.">
+            <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Gemini 2.0 Flash" autoFocus />
+          </Field>
+          <Field label="Version" hint="Free-form — provider date or semver.">
+            <input className={inputCls} value={version} onChange={(e) => setVersion(e.target.value)} placeholder="e.g. 2025-01-30" />
+          </Field>
+          <Field label="Provider">
+            <select className={selectCls} value={provider} onChange={(e) => setProvider(e.target.value)}>
+              {["OpenAI", "Anthropic", "Google", "Mistral", "Meta · self-hosted", "Cohere", "AWS Bedrock", "Azure OpenAI", "Other"].map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Owner team">
+            <select className={selectCls} value={owner} onChange={(e) => setOwner(e.target.value)}>
+              {["Platform Engineering", "Service Desk", "Data & Analytics", "Security", "Compliance", "Other"].map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Risk tier" hint="High-risk models trigger mandatory human review.">
+            <select className={selectCls} value={risk} onChange={(e) => setRisk(e.target.value as Risk)}>
+              {(["Low", "Medium", "High"] as Risk[]).map((r) => (
+                <option key={r}>{r}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Lifecycle status">
+            <select className={selectCls} value={status} onChange={(e) => setStatus(e.target.value as Status)}>
+              {(["Staging", "Production", "Deprecated"] as Status[]).map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <Field label="Description (optional)" hint="What is this model used for? Who depends on it?">
+          <textarea className={textareaCls} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Long-context summarization for governed knowledge base." />
+        </Field>
+      </form>
+    </Modal>
   );
 }
 
@@ -350,7 +391,7 @@ function SumCard({ label, value, sub }: { label: string; value: string; sub: str
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-4 shadow-sm">
       <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-2xl font-bold text-foreground mt-0.5">{value}</p>
+      <p className="text-2xl font-bold text-foreground mt-0.5 tabular-nums">{value}</p>
       <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>
     </div>
   );
@@ -379,9 +420,7 @@ function FilterPill({
         className="bg-transparent font-semibold text-foreground outline-none cursor-pointer"
       >
         {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
+          <option key={o} value={o}>{o}</option>
         ))}
       </select>
     </div>
@@ -409,9 +448,7 @@ function Th({
       <button
         type="button"
         onClick={() => onSort(sortKey)}
-        className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${
-          isActive ? "text-foreground" : ""
-        }`}
+        className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${isActive ? "text-foreground" : ""}`}
       >
         {label}
         <ArrowUpDown className={`w-3 h-3 ${isActive ? "opacity-100" : "opacity-40"}`} />

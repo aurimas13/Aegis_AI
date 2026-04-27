@@ -63,6 +63,7 @@ export function PageFooter({ compact = false }: { compact?: boolean }) {
               ["/policies", "Policy Library"],
               ["/audit", "Audit Log"],
               ["/integrations", "Integrations"],
+              ["/settings", "Settings"],
               ["/status", "System Status"],
               ["/pricing", "Pricing"],
             ].map(([href, label]) => (

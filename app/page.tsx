@@ -208,6 +208,7 @@ export default function Home() {
             { href: "/policies", title: "Policy Library", desc: "Toggle 10 governance rules — changes persist locally for the demo.", badge: "Interactive" },
             { href: "/audit", title: "Audit Log", desc: "Searchable, filterable event trail with full event payloads." },
             { href: "/integrations", title: "Integrations", desc: "20+ connectors — Slack, Jira, ServiceNow, Datadog, OpenAI, more." },
+            { href: "/settings", title: "Settings", desc: "Generate API keys, invite teammates, tune notifications, manage billing.", badge: "Functional" },
             { href: "/status", title: "System Status", desc: "Live health, 90-day uptime per service, incident history." },
           ].map((p) => (
             <Link

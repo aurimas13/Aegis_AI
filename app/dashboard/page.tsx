@@ -36,6 +36,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { PageFooter } from "@/components/page-footer";
+import { downloadCsv } from "@/lib/storage";
 
 // ─── Static demo data ───
 const spendOverTime = [
@@ -124,6 +125,8 @@ export default function DashboardPage() {
   const [activity, setActivity] = useState(initialActivity);
   const [isLive, setIsLive] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Live KPIs that genuinely change on Refresh
+  const [kpiTick, setKpiTick] = useState(0);
 
   // Simulated live activity stream
   useEffect(() => {
@@ -153,16 +156,37 @@ export default function DashboardPage() {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    setKpiTick((t) => t + 1); // force visible KPI re-randomization
     toast.success("Dashboard refreshed", {
       description: "Latest metrics pulled from the governance plane.",
     });
-    setTimeout(() => setRefreshing(false), 800);
+    setTimeout(() => setRefreshing(false), 600);
   };
 
   const handleExport = () => {
-    toast.success("Report queued", {
-      description: "PDF export scheduled — link will arrive in your inbox.",
+    const stamp = new Date().toISOString().slice(0, 10);
+    // Daily spend
+    downloadCsv(`aegis-spend-${stamp}.csv`, [
+      ["day", "modernization_usd", "itsm_usd", "total_usd"],
+      ...spendOverTime.map((d) => [d.day, d.modernization, d.itsm, d.total]),
+    ]);
+    // Top models
+    setTimeout(() => {
+      downloadCsv(`aegis-top-models-${stamp}.csv`, [
+        ["model", "spend_usd", "calls"],
+        ...topModels.map((m) => [m.name, m.spend, m.calls]),
+      ]);
+    }, 300);
+    toast.success("Report exported", {
+      description: "Two CSVs (daily spend + top models) downloaded to your machine.",
     });
+  };
+
+  // Tiny deterministic-ish jitter for the KPI strip on Refresh
+  const jitter = (base: number, pct = 0.04) => {
+    const seed = (kpiTick * 9301 + 49297) % 233280;
+    const r = (seed / 233280 - 0.5) * 2;
+    return Math.round(base * (1 + r * pct));
   };
 
   return (
@@ -200,7 +224,7 @@ export default function DashboardPage() {
           <KpiCard
             icon={Coins}
             label="Spend (April)"
-            value="$3,065"
+            value={`$${jitter(3065).toLocaleString()}`}
             delta="+18.2%"
             deltaUp
             sub="vs last month"
@@ -208,7 +232,7 @@ export default function DashboardPage() {
           <KpiCard
             icon={Zap}
             label="Tokens Consumed"
-            value="2.41M"
+            value={`${(jitter(2410000) / 1_000_000).toFixed(2)}M`}
             delta="+24.1%"
             deltaUp
             sub="last 30 days"
@@ -216,7 +240,7 @@ export default function DashboardPage() {
           <KpiCard
             icon={Users}
             label="Active Teams"
-            value="13"
+            value={String(13 + (kpiTick % 3))}
             delta="+2"
             deltaUp
             sub="onboarded this month"
@@ -224,7 +248,7 @@ export default function DashboardPage() {
           <KpiCard
             icon={ShieldAlert}
             label="Open Alerts"
-            value="3"
+            value={String(Math.max(0, 3 - (kpiTick % 4)))}
             delta="-4"
             deltaUp={false}
             sub="resolved this week"

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { PageFooter } from "@/components/page-footer";
+import { downloadCsv } from "@/lib/storage";
 
 type EventLevel = "info" | "ok" | "warn" | "error";
 type EventCategory = "AI Call" | "Policy" | "Auth" | "Config" | "PII Scan";
@@ -87,11 +88,14 @@ export default function AuditLogPage() {
           actions={
             <button
               type="button"
-              onClick={() =>
-                toast.success("Export queued", {
-                  description: "Signed CSV download link will arrive in your inbox.",
-                })
-              }
+              onClick={() => {
+                const header = ["id", "timestamp", "level", "category", "actor", "action", "details", "cost_usd", "tokens"];
+                const rows = filtered.map((e) => [e.id, e.timestamp, e.level, e.category, e.actor, e.action, e.details, e.cost ?? "", e.tokens ?? ""]);
+                downloadCsv(`aegis-audit-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+                toast.success(`Exported ${rows.length} events`, {
+                  description: "CSV download started — check your browser downloads.",
+                });
+              }}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />

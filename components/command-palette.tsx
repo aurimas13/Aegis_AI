@@ -21,8 +21,13 @@ import {
   Search,
   ArrowRight,
   Sparkles,
+  Settings as SettingsIcon,
+  KeyRound,
+  Mail,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import { downloadCsv } from "@/lib/storage";
 
 interface PaletteItem {
   group: string;
@@ -101,6 +106,14 @@ const items: PaletteItem[] = [
   },
   {
     group: "Navigate",
+    label: "Settings",
+    description: "API keys, team, notifications, billing",
+    icon: SettingsIcon,
+    keywords: "settings preferences workspace api keys team",
+    perform: (r) => r.push("/settings"),
+  },
+  {
+    group: "Navigate",
     label: "Pricing",
     description: "Plans & feature comparison",
     icon: CreditCard,
@@ -127,43 +140,80 @@ const items: PaletteItem[] = [
   // ─── Actions ───
   {
     group: "Actions",
-    label: "Run a governance check",
-    icon: ShieldCheck,
-    keywords: "scan check compliance",
-    perform: () =>
-      toast.success("Governance scan started", {
-        description: "Scanning the last 24h of AI calls. We'll notify you when complete.",
-      }),
+    label: "Generate API key…",
+    description: "Open Settings → API Keys with the generate dialog",
+    icon: KeyRound,
+    keywords: "api key token credentials generate sk_live",
+    perform: (r) => r.push("/settings?tab=api-keys&action=generate-key"),
+  },
+  {
+    group: "Actions",
+    label: "Invite a teammate…",
+    description: "Open Settings → Team with the invite dialog",
+    icon: Mail,
+    keywords: "invite team member rbac add user",
+    perform: (r) => r.push("/settings?tab=team&action=invite"),
   },
   {
     group: "Actions",
     label: "Export audit log (CSV)",
-    icon: ScrollText,
-    keywords: "export download csv audit",
-    perform: () =>
-      toast.message("Audit export queued", {
-        description: "A signed download link will arrive in your email shortly.",
-      }),
+    description: "Download the last 18 events as CSV",
+    icon: Download,
+    keywords: "export download csv audit log",
+    perform: () => {
+      // Match the rows surfaced on /audit
+      const rows: (string | number)[][] = [
+        ["id", "timestamp", "level", "category", "actor", "action", "details"],
+        ["evt_8421", "2026-04-27 14:23:18", "ok", "AI Call", "platform-eng@aegis", "modernize.cobol_to_python", "Job evt_8421 completed · GPT-4o · 1,204 tokens"],
+        ["evt_8420", "2026-04-27 14:22:51", "warn", "PII Scan", "compliance-bot", "pii.redact", "SSN-like pattern detected in INC-0042815"],
+        ["evt_8419", "2026-04-27 14:22:04", "ok", "AI Call", "service-desk@aegis", "itsm.triage", "Incident triage completed · GPT-4o-mini · 312 tokens"],
+      ];
+      downloadCsv(`aegis-audit-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+      toast.success("Audit log exported", {
+        description: "CSV download started — check your browser downloads.",
+      });
+    },
   },
   {
     group: "Actions",
-    label: "Invite a teammate",
-    icon: UserRound,
-    keywords: "invite team member rbac",
-    perform: () =>
-      toast.message("Open the team settings to invite", {
-        description: "Settings → Team → Invite member.",
-      }),
+    label: "Run governance scan",
+    description: "Scan the last 24h of AI calls for policy violations",
+    icon: ShieldCheck,
+    keywords: "scan check compliance governance audit",
+    perform: () => {
+      const id = `scan_${Math.random().toString(36).slice(2, 8)}`;
+      toast.loading(`Scan ${id} running…`, {
+        id,
+        description: "Replaying 1,827 events through every active policy.",
+      });
+      // Three-phase fake progress so the user feels something happens
+      setTimeout(() => {
+        toast.loading(`Scan ${id} · Replaying calls (43%)`, {
+          id,
+          description: "786 / 1,827 events processed.",
+        });
+      }, 900);
+      setTimeout(() => {
+        toast.loading(`Scan ${id} · Cross-checking policies (78%)`, {
+          id,
+          description: "Validating cost ceiling, PII, and prompt-injection rules.",
+        });
+      }, 1900);
+      setTimeout(() => {
+        toast.success(`Scan ${id} · complete`, {
+          id,
+          description: "0 critical · 3 warnings · 12,649 OK. Open the Audit Log to inspect.",
+        });
+      }, 3000);
+    },
   },
   {
     group: "Actions",
-    label: "Generate API key",
-    icon: Sparkles,
-    keywords: "api key token credentials",
-    perform: () =>
-      toast.success("API key generated", {
-        description: "sk_live_***************4f2 — copied to clipboard.",
-      }),
+    label: "Reset all demo data",
+    description: "Wipe localStorage and restore default seed data",
+    icon: SettingsIcon,
+    keywords: "reset wipe clear demo localstorage",
+    perform: (r) => r.push("/settings?tab=danger"),
   },
 
   // ─── External ───

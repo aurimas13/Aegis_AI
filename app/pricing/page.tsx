@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CreditCard,
   Check,
@@ -13,8 +14,10 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { PageFooter } from "@/components/page-footer";
+import { Modal, Field, inputCls, selectCls, PrimaryButton, GhostButton } from "@/components/modal";
+import { getStorage, setStorage } from "@/lib/storage";
 
-interface Tier {
+type Tier = {
   name: string;
   tagline: string;
   monthly: number | null;
@@ -23,7 +26,7 @@ interface Tier {
   highlight?: boolean;
   features: string[];
   fineprint?: string;
-}
+};
 
 const tiers: Tier[] = [
   {
@@ -100,8 +103,20 @@ const matrix = [
   { feature: "Uptime SLA", starter: "—", growth: "99.9%", enterprise: "99.99%" },
 ];
 
+interface SignupRecord {
+  email: string;
+  workspace: string;
+  role: string;
+  tier: string;
+  billing: "monthly" | "annual";
+  createdAt: string;
+}
+const SIGNUP_KEY = "pricing.signups.v1";
+
 export default function PricingPage() {
   const [annual, setAnnual] = useState(true);
+  const [signupTier, setSignupTier] = useState<Tier | null>(null);
+  const router = useRouter();
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-thin">
@@ -196,10 +211,8 @@ export default function PricingPage() {
                   type="button"
                   onClick={() =>
                     tier.name === "Enterprise"
-                      ? (window.location.href = "/about-builder")
-                      : toast.success(`${tier.name} signup`, {
-                          description: "We'd email you a magic link in production. This is a demo.",
-                        })
+                      ? router.push("/about-builder")
+                      : setSignupTier(tier)
                   }
                   className={`inline-flex items-center justify-center gap-1.5 w-full px-4 py-2.5 rounded-lg font-semibold text-[13px] transition-colors shadow-sm ${
                     tier.highlight
@@ -276,7 +289,131 @@ export default function PricingPage() {
 
         <PageFooter compact />
       </div>
+
+      <SignupDialog
+        tier={signupTier}
+        annual={annual}
+        onClose={() => setSignupTier(null)}
+      />
     </div>
+  );
+}
+
+function SignupDialog({
+  tier,
+  annual,
+  onClose,
+}: {
+  tier: Tier | null;
+  annual: boolean;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [workspace, setWorkspace] = useState("");
+  const [role, setRole] = useState("AI Platform Lead");
+  const [agreed, setAgreed] = useState(false);
+
+  useEffect(() => {
+    if (tier) {
+      setEmail("");
+      setWorkspace("");
+      setRole("AI Platform Lead");
+      setAgreed(false);
+    }
+  }, [tier]);
+
+  if (!tier) return null;
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid work email.");
+      return;
+    }
+    if (!workspace.trim()) {
+      toast.error("Choose a workspace name.");
+      return;
+    }
+    if (!agreed) {
+      toast.error("Please agree to the demo Terms.");
+      return;
+    }
+    const list = getStorage<SignupRecord[]>(SIGNUP_KEY, []);
+    list.unshift({
+      email,
+      workspace: workspace.trim(),
+      role,
+      tier: tier.name,
+      billing: annual ? "annual" : "monthly",
+      createdAt: new Date().toISOString(),
+    });
+    setStorage(SIGNUP_KEY, list.slice(0, 50));
+    toast.success(`Welcome to ${tier.name} · ${workspace}`, {
+      description: "Magic link 'sent'. Routing you to the live dashboard.",
+    });
+    onClose();
+    setTimeout(() => router.push("/dashboard"), 300);
+  };
+
+  const subtitle =
+    tier.name === "Starter"
+      ? "Free forever for evaluation. No credit card required."
+      : `${annual ? "Annual" : "Monthly"} billing — 30-day money-back guarantee.`;
+
+  return (
+    <Modal
+      open={!!tier}
+      onClose={onClose}
+      title={`Start ${tier.name}`}
+      description={subtitle}
+      size="md"
+      footer={
+        <>
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
+          <PrimaryButton onClick={() => {
+            const f = document.getElementById("signup-form") as HTMLFormElement | null;
+            f?.requestSubmit();
+          }}>
+            <Sparkles className="w-3.5 h-3.5" />
+            {tier.cta}
+          </PrimaryButton>
+        </>
+      }
+    >
+      <form id="signup-form" onSubmit={submit}>
+        <Field label="Work email">
+          <input className={inputCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoFocus />
+        </Field>
+        <Field label="Workspace name" hint="Lowercase, no spaces. Becomes your subdomain.">
+          <div className="flex items-stretch">
+            <input
+              className={inputCls + " rounded-r-none"}
+              value={workspace}
+              onChange={(e) => setWorkspace(e.target.value.replace(/[^a-z0-9-]/g, "").toLowerCase())}
+              placeholder="acme-platform"
+            />
+            <span className="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-border bg-secondary text-[12px] text-muted-foreground">
+              .aegis.app
+            </span>
+          </div>
+        </Field>
+        <Field label="Your role">
+          <select className={selectCls} value={role} onChange={(e) => setRole(e.target.value)}>
+            {["AI Platform Lead", "Engineering Manager", "VP Engineering", "CTO", "CIO", "Compliance / Security", "Product Manager", "Other"].map((r) => (
+              <option key={r}>{r}</option>
+            ))}
+          </select>
+        </Field>
+        <label className="flex items-start gap-2 mt-2 text-[11px] text-muted-foreground leading-snug cursor-pointer">
+          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-primary" />
+          <span>
+            I agree to the demo&nbsp;Terms and understand this is a portfolio demo — my
+            sign-up is stored locally in my browser and not sent to any backend.
+          </span>
+        </label>
+      </form>
+    </Modal>
   );
 }
 

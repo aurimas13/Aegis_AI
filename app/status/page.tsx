@@ -1,10 +1,13 @@
 "use client";
 
-import { Activity, CheckCircle2, AlertTriangle, Cloud, Database, Globe, Cpu, Shield, Bell } from "lucide-react";
+import { useState, FormEvent } from "react";
+import { Activity, CheckCircle2, AlertTriangle, Cloud, Database, Globe, Cpu, Shield, Bell, Mail, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { PageFooter } from "@/components/page-footer";
+import { Modal, Field, inputCls, PrimaryButton, GhostButton } from "@/components/modal";
+import { getStorage, setStorage } from "@/lib/storage";
 
 const services = [
   { name: "Governance API", icon: Shield, status: "operational", uptime: "99.997%", latency: "42ms" },
@@ -74,6 +77,7 @@ const STATUS_META: Record<string, { label: string; cls: string; pill: string }> 
 };
 
 export default function StatusPage() {
+  const [subOpen, setSubOpen] = useState(false);
   const allOk = services.every((s) => s.status === "operational");
   const anyDegraded = services.some((s) => s.status === "degraded");
 
@@ -88,11 +92,7 @@ export default function StatusPage() {
           actions={
             <button
               type="button"
-              onClick={() =>
-                toast.success("Subscribed", {
-                  description: "Status updates will arrive via email and Slack.",
-                })
-              }
+              onClick={() => setSubOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-[12px] font-medium text-foreground hover:bg-secondary transition-colors shadow-sm"
             >
               <Bell className="w-3.5 h-3.5" />
@@ -213,6 +213,123 @@ export default function StatusPage() {
 
         <PageFooter compact />
       </div>
+
+      <SubscribeDialog open={subOpen} onClose={() => setSubOpen(false)} />
     </div>
+  );
+}
+
+interface Subscription {
+  email: string;
+  slack: boolean;
+  webhook: boolean;
+  webhookUrl?: string;
+  scopes: string[];
+  createdAt: string;
+}
+const SUB_KEY = "status.subscriptions.v1";
+
+function SubscribeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [slack, setSlack] = useState(true);
+  const [webhook, setWebhook] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [scopes, setScopes] = useState<string[]>(["All services"]);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+    if (webhook && !/^https?:\/\//.test(webhookUrl)) {
+      toast.error("Webhook URL must start with http(s)://");
+      return;
+    }
+    const list = getStorage<Subscription[]>(SUB_KEY, []);
+    list.unshift({
+      email,
+      slack,
+      webhook,
+      webhookUrl: webhook ? webhookUrl : undefined,
+      scopes,
+      createdAt: new Date().toISOString(),
+    });
+    setStorage(SUB_KEY, list.slice(0, 20));
+    toast.success(`Subscribed · ${email}`, {
+      description: `Updates: ${["Email", slack && "Slack", webhook && "Webhook"].filter(Boolean).join(" · ")}.`,
+    });
+    onClose();
+  };
+
+  const toggleScope = (s: string) => {
+    setScopes((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Subscribe to status updates"
+      description="Get notified the moment a service degrades, recovers, or undergoes maintenance."
+      size="md"
+      footer={
+        <>
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
+          <PrimaryButton onClick={() => {
+            const f = document.getElementById("sub-form") as HTMLFormElement | null;
+            f?.requestSubmit();
+          }}>
+            <Bell className="w-3.5 h-3.5" />
+            Subscribe
+          </PrimaryButton>
+        </>
+      }
+    >
+      <form id="sub-form" onSubmit={submit}>
+        <Field label="Email" hint="We send a digest plus immediate alerts for major incidents.">
+          <input className={inputCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoFocus />
+        </Field>
+        <Field label="Channels">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-[12px] text-foreground/85 cursor-pointer">
+              <input type="checkbox" checked readOnly className="accent-primary" />
+              <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Email (always on)
+            </label>
+            <label className="flex items-center gap-2 text-[12px] text-foreground/85 cursor-pointer">
+              <input type="checkbox" checked={slack} onChange={(e) => setSlack(e.target.checked)} className="accent-primary" />
+              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" /> Slack (#status)
+            </label>
+            <label className="flex items-center gap-2 text-[12px] text-foreground/85 cursor-pointer">
+              <input type="checkbox" checked={webhook} onChange={(e) => setWebhook(e.target.checked)} className="accent-primary" />
+              <Globe className="w-3.5 h-3.5 text-muted-foreground" /> Webhook
+            </label>
+            {webhook && (
+              <input className={inputCls + " mt-1"} type="url" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.your-co.com/aegis-status" />
+            )}
+          </div>
+        </Field>
+        <Field label="Scope" hint="Which services do you care about?">
+          <div className="flex flex-wrap gap-1.5">
+            {["All services", "Governance API", "Modernization Workers", "ITSM Copilot Stream", "Audit Log Pipeline", "Web Console"].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => toggleScope(s)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                  scopes.includes(s)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-foreground/70 border-border hover:border-primary/40"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </Field>
+      </form>
+    </Modal>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import {
   Plug,
   MessageSquare,
@@ -17,11 +17,15 @@ import {
   Database,
   Sparkles,
   Search,
+  Settings as SettingsIcon,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { PageFooter } from "@/components/page-footer";
+import { Modal, Field, inputCls, PrimaryButton, GhostButton } from "@/components/modal";
+import { getStorage, setStorage } from "@/lib/storage";
 
 type Category = "Communication" | "ITSM" | "Observability" | "Source Control" | "Identity" | "AI Provider" | "Data";
 
@@ -67,7 +71,10 @@ const CATEGORIES: ("All" | Category)[] = [
   "Data",
 ];
 
-const STORAGE_KEY = "aegis.integrations.connected";
+const STORAGE_KEY = "integrations.connected.v1";
+const CONFIG_KEY = "integrations.configs.v1";
+
+type Config = Record<string, { channel?: string; webhookUrl?: string; tokenLast4?: string; events?: string[] }>;
 
 export default function IntegrationsPage() {
   const [connected, setConnected] = useState<Record<string, boolean>>({
@@ -83,35 +90,48 @@ export default function IntegrationsPage() {
   const [filter, setFilter] = useState<"All" | Category>("All");
   const [search, setSearch] = useState("");
 
+  const [configOpen, setConfigOpen] = useState<Integration | null>(null);
+  const [configs, setConfigs] = useState<Config>({});
+
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setConnected(JSON.parse(raw));
-    } catch {
-      /* ignore */
-    }
+    setConnected(getStorage<Record<string, boolean>>(STORAGE_KEY, connected));
+    setConfigs(getStorage<Config>(CONFIG_KEY, {}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggle = (id: string) => {
     setConnected((prev) => {
       const next = { ...prev, [id]: !prev[id] };
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
+      setStorage(STORAGE_KEY, next);
       const integration = integrations.find((i) => i.id === id);
       if (integration) {
         if (next[id]) {
+          // Open the configuration dialog right after connect
+          setConfigOpen(integration);
           toast.success(`Connected · ${integration.name}`, {
-            description: "OAuth flow would launch here in production.",
+            description: "Configure events and credentials in the dialog that just opened.",
           });
         } else {
+          // Clear stored config when disconnected
+          setConfigs((c) => {
+            const { [id]: _drop, ...rest } = c;
+            void _drop;
+            setStorage(CONFIG_KEY, rest);
+            return rest;
+          });
           toast.message(`Disconnected · ${integration.name}`, {
             description: "Existing data is retained for 30 days.",
           });
         }
       }
+      return next;
+    });
+  };
+
+  const saveConfig = (id: string, cfg: Config[string]) => {
+    setConfigs((prev) => {
+      const next = { ...prev, [id]: cfg };
+      setStorage(CONFIG_KEY, next);
       return next;
     });
   };
@@ -209,17 +229,33 @@ export default function IntegrationsPage() {
                 <p className="text-[12px] text-muted-foreground leading-relaxed flex-1 mb-4">
                   {i.description}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => toggle(i.id)}
-                  className={`w-full px-3 py-2 rounded-lg font-semibold text-[12px] transition-colors ${
-                    isOn
-                      ? "bg-secondary text-foreground hover:bg-destructive/10 hover:text-destructive border border-border"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90"
-                  }`}
-                >
-                  {isOn ? "Disconnect" : "Connect"}
-                </button>
+                {isOn ? (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfigOpen(i)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-semibold text-[12px] transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      <SettingsIcon className="w-3.5 h-3.5" />
+                      Configure
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggle(i.id)}
+                      className="px-3 py-2 rounded-lg font-semibold text-[12px] transition-colors bg-card text-foreground hover:bg-secondary border border-border"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggle(i.id)}
+                    className="w-full px-3 py-2 rounded-lg font-semibold text-[12px] transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Connect
+                  </button>
+                )}
               </div>
             );
           })}
@@ -259,7 +295,113 @@ export default function IntegrationsPage() {
 
         <PageFooter compact />
       </div>
+
+      <ConfigureDialog
+        integration={configOpen}
+        config={configOpen ? configs[configOpen.id] : undefined}
+        onClose={() => setConfigOpen(null)}
+        onSave={(cfg) => {
+          if (configOpen) {
+            saveConfig(configOpen.id, cfg);
+            toast.success(`${configOpen.name} configured`, {
+              description: "Settings saved. Test event sent to verify the connection.",
+            });
+            setConfigOpen(null);
+          }
+        }}
+      />
     </div>
+  );
+}
+
+function ConfigureDialog({
+  integration,
+  config,
+  onClose,
+  onSave,
+}: {
+  integration: Integration | null;
+  config?: Config[string];
+  onClose: () => void;
+  onSave: (cfg: Config[string]) => void;
+}) {
+  const [channel, setChannel] = useState("#aegis-alerts");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [token, setToken] = useState("");
+  const [events, setEvents] = useState<string[]>(["Policy violation", "Cost ceiling", "Incident"]);
+
+  useEffect(() => {
+    if (integration) {
+      setChannel(config?.channel ?? "#aegis-alerts");
+      setWebhookUrl(config?.webhookUrl ?? "");
+      setToken("");
+      setEvents(config?.events ?? ["Policy violation", "Cost ceiling", "Incident"]);
+    }
+  }, [integration, config]);
+
+  if (!integration) return null;
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    onSave({
+      channel: channel.trim() || undefined,
+      webhookUrl: webhookUrl.trim() || undefined,
+      tokenLast4: token ? token.slice(-4) : config?.tokenLast4,
+      events,
+    });
+  };
+
+  const toggleEvent = (e: string) =>
+    setEvents((prev) => (prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]));
+
+  return (
+    <Modal
+      open={!!integration}
+      onClose={onClose}
+      title={`Configure ${integration.name}`}
+      description={`Choose where Aegis sends ${integration.category.toLowerCase()} events from your workspace.`}
+      size="md"
+      footer={
+        <>
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
+          <PrimaryButton onClick={() => {
+            const f = document.getElementById("int-config-form") as HTMLFormElement | null;
+            f?.requestSubmit();
+          }}>
+            <Save className="w-3.5 h-3.5" />
+            Save &amp; send test event
+          </PrimaryButton>
+        </>
+      }
+    >
+      <form id="int-config-form" onSubmit={submit}>
+        <Field label="Channel / target" hint="For chat tools: a channel name. For email: a distribution list.">
+          <input className={inputCls} value={channel} onChange={(e) => setChannel(e.target.value)} placeholder="#aegis-alerts" autoFocus />
+        </Field>
+        <Field label="Webhook URL (optional)" hint="Used as a fallback delivery channel.">
+          <input className={inputCls} type="url" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.your-co.com/" />
+        </Field>
+        <Field label="API token (optional)" hint="We store only the last 4 characters. Full token never leaves your browser in this demo.">
+          <input className={inputCls + " font-mono"} type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder={config?.tokenLast4 ? `•••• •••• •••• ${config.tokenLast4}` : "xoxb-***************"} />
+        </Field>
+        <Field label="Events to forward">
+          <div className="flex flex-wrap gap-1.5">
+            {["Policy violation", "Cost ceiling", "Incident", "PII redaction", "Model registered", "Audit export"].map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => toggleEvent(e)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                  events.includes(e) ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground/70 border-border hover:border-primary/40"
+                }`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        </Field>
+      </form>
+    </Modal>
   );
 }
 

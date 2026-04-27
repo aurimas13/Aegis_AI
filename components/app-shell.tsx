@@ -24,6 +24,7 @@ import {
   UserRound,
   Search,
   Sparkles,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
@@ -69,6 +70,7 @@ const sections: NavSection[] = [
     label: "Platform",
     items: [
       { name: "Integrations", href: "/integrations", icon: Plug },
+      { name: "Settings", href: "/settings", icon: SettingsIcon },
       { name: "System Status", href: "/status", icon: Activity },
       { name: "Pricing", href: "/pricing", icon: CreditCard },
     ],
