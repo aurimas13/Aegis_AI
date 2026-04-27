@@ -115,7 +115,7 @@ export default function AboutBuilderPage() {
               </p>
               <div className="flex items-center gap-2 flex-wrap">
                 <a
-                  href="mailto:hello@aurimas.io?subject=Aegis%20AI%20%E2%80%94%20engagement%20enquiry"
+                  href="mailto:aurimas.nausedas@proton.me?subject=Aegis%20AI%20%E2%80%94%20engagement%20enquiry"
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-colors shadow-sm"
                   onClick={() =>
                     toast.success("Opening your email client", {
@@ -124,7 +124,7 @@ export default function AboutBuilderPage() {
                   }
                 >
                   <Mail className="w-3.5 h-3.5" />
-                  hello@aurimas.io
+                  aurimas.nausedas@proton.me
                 </a>
                 <a
                   href="https://aurimas.io"
@@ -297,11 +297,11 @@ export default function AboutBuilderPage() {
           </p>
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <a
-              href="mailto:hello@aurimas.io?subject=Aegis%20AI%20%E2%80%94%20engagement%20enquiry"
+              href="mailto:aurimas.nausedas@proton.me?subject=Aegis%20AI%20%E2%80%94%20engagement%20enquiry"
               className="inline-flex items-center gap-1.5 px-5 py-3 rounded-lg bg-primary text-primary-foreground text-[14px] font-semibold hover:bg-primary/90 transition-colors shadow-sm"
             >
               <Mail className="w-4 h-4" />
-              hello@aurimas.io
+              aurimas.nausedas@proton.me
               <ArrowRight className="w-3.5 h-3.5" />
             </a>
             <Link
