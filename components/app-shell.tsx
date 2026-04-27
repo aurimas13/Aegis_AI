@@ -3,54 +3,119 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Code as Code2, MessageSquareText, ChevronLeft, ChevronRight, Shield, User, Home, FileText, ExternalLink, Menu, X } from "lucide-react";
+import {
+  Code as Code2,
+  MessageSquareText,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  Home,
+  FileText,
+  ExternalLink,
+  Menu,
+  X,
+  LayoutDashboard,
+  Boxes,
+  ListChecks,
+  ScrollText,
+  Plug,
+  Activity,
+  CreditCard,
+  UserRound,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
+import { CommandPalette } from "@/components/command-palette";
 
-const navigation = [
+type NavItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  exact?: boolean;
+  badge?: string;
+};
+
+type NavSection = {
+  label: string;
+  items: NavItem[];
+};
+
+const sections: NavSection[] = [
   {
-    name: "Home",
-    href: "/",
-    icon: Home,
-    exact: true,
+    label: "Overview",
+    items: [
+      { name: "Home", href: "/", icon: Home, exact: true },
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    ],
   },
   {
-    name: "Legacy Modernization",
-    href: "/legacy-modernization",
-    icon: Code2,
+    label: "Workflows",
+    items: [
+      { name: "Legacy Modernization", href: "/legacy-modernization", icon: Code2 },
+      { name: "ITSM Copilot", href: "/itsm-copilot", icon: MessageSquareText },
+    ],
   },
   {
-    name: "ITSM Copilot",
-    href: "/itsm-copilot",
-    icon: MessageSquareText,
+    label: "Governance",
+    items: [
+      { name: "Model Registry", href: "/models", icon: Boxes },
+      { name: "Policy Library", href: "/policies", icon: ListChecks },
+      { name: "Audit Log", href: "/audit", icon: ScrollText },
+    ],
   },
   {
-    name: "Case Study",
-    href: "/case-study",
-    icon: FileText,
+    label: "Platform",
+    items: [
+      { name: "Integrations", href: "/integrations", icon: Plug },
+      { name: "System Status", href: "/status", icon: Activity },
+      { name: "Pricing", href: "/pricing", icon: CreditCard },
+    ],
+  },
+  {
+    label: "About",
+    items: [
+      { name: "Case Study", href: "/case-study", icon: FileText },
+      { name: "About the Builder", href: "/about-builder", icon: UserRound, badge: "Hire" },
+    ],
   },
 ];
+
+function isModifierKey(e: KeyboardEvent) {
+  return e.metaKey || e.ctrlKey;
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
-  // Close the mobile drawer whenever the route changes
+  // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  // Lock body scroll while the mobile drawer is open
+  // Lock body scroll while mobile drawer is open
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
+
+  // Open command palette when ⌘K pressed anywhere (CommandPalette also listens)
+  // We also dispatch a synthetic event from the search button so users without keyboards can open it.
+  const openPalette = () => {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true })
+    );
+  };
+
+  const isActive = (item: NavItem) =>
+    item.exact
+      ? pathname === item.href
+      : pathname === item.href || pathname?.startsWith(item.href + "/");
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -68,17 +133,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm">
             <Shield className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="text-sm font-semibold text-foreground tracking-tight">Aegis AI</span>
+          <span className="text-sm font-semibold text-foreground tracking-tight">
+            Aegis AI
+          </span>
         </Link>
-        <a
-          href="https://aurimas.io"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={openPalette}
           className="p-2 -mr-2 rounded-lg hover:bg-secondary/60 transition-colors"
-          aria-label="Go to aurimas.io"
+          aria-label="Open command palette"
         >
-          <ExternalLink className="w-4 h-4 text-foreground" />
-        </a>
+          <Search className="w-4 h-4 text-foreground" />
+        </button>
       </div>
 
       {/* ── Mobile backdrop ── */}
@@ -91,15 +157,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
       )}
 
+      {/* ── Desktop sidebar ── */}
       <aside
         className={cn(
-          "flex flex-col border-r border-border bg-card shadow-sm transition-all duration-300 ease-in-out",
-          // Desktop: normal sidebar (collapsible)
-          "hidden md:flex shrink-0",
-          collapsed ? "md:w-[72px]" : "md:w-[264px]"
+          "hidden md:flex flex-col border-r border-border bg-card shadow-sm transition-all duration-300 ease-in-out shrink-0",
+          collapsed ? "md:w-[72px]" : "md:w-[268px]"
         )}
       >
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
+        {/* Brand */}
+        <Link
+          href="/"
+          className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0 hover:bg-secondary/30 transition-colors"
+        >
           <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary shadow-sm shrink-0">
             <Shield className="w-5 h-5 text-primary-foreground" />
           </div>
@@ -113,86 +182,122 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
             </div>
           )}
-        </div>
+        </Link>
 
-        <nav className="flex-1 py-4 px-2 overflow-y-auto scrollbar-thin">
-          {!collapsed && (
-            <span className="px-3 mb-2 block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-              Workspaces
-            </span>
-          )}
-          <div className="space-y-1 mt-1">
-            {navigation.map((item) => {
-              const exact = "exact" in item && item.exact;
-              const isActive = exact
-                ? pathname === item.href
-                : pathname === item.href ||
-                  pathname?.startsWith(item.href + "/");
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-                  )}
-                  title={collapsed ? item.name : undefined}
-                >
-                  <item.icon
-                    className={cn(
-                      "w-[18px] h-[18px] shrink-0 transition-colors",
-                      isActive
-                        ? "text-primary"
-                        : "text-muted-foreground group-hover:text-foreground"
-                    )}
-                  />
-                  {!collapsed && <span>{item.name}</span>}
-                  {isActive && !collapsed && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
-                  )}
-                </Link>
-              );
-            })}
+        {/* ⌘K search bar */}
+        {!collapsed && (
+          <div className="px-3 pt-3 shrink-0">
+            <button
+              type="button"
+              onClick={openPalette}
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-secondary/60 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="flex-1 text-left">Search or jump to…</span>
+              <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-card border border-border">
+                ⌘K
+              </kbd>
+            </button>
           </div>
-        </nav>
-
-        <div className="border-t border-border p-2 shrink-0 space-y-1">
-          <a
-            href="https://aurimas.io"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-            title={collapsed ? "Back to aurimas.io" : undefined}
+        )}
+        {collapsed && (
+          <button
+            type="button"
+            onClick={openPalette}
+            title="Search (⌘K)"
+            className="mx-auto my-3 p-2 rounded-lg bg-secondary/60 border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           >
-            <ExternalLink className="w-[18px] h-[18px] shrink-0" />
-            {!collapsed && <span>aurimas.io</span>}
-          </a>
-          {!collapsed && (
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary/40">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                <User className="w-4 h-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-foreground truncate">
-                  Aurimas Nausedas
-                </p>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  Platform Admin
-                </p>
+            <Search className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Nav */}
+        <nav className="flex-1 py-3 px-2 overflow-y-auto scrollbar-thin">
+          {sections.map((section, idx) => (
+            <div key={section.label} className={cn(idx > 0 && "mt-4")}>
+              {!collapsed && (
+                <span className="px-3 mb-1.5 block text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-widest">
+                  {section.label}
+                </span>
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const active = isActive(item);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      title={collapsed ? item.name : undefined}
+                      className={cn(
+                        "group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-foreground/70 hover:text-foreground hover:bg-secondary/60"
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          "w-[17px] h-[17px] shrink-0 transition-colors",
+                          active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                        )}
+                      />
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1 truncate">{item.name}</span>
+                          {item.badge && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground">
+                              {item.badge}
+                            </span>
+                          )}
+                          {active && !item.badge && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          )}
+                        </>
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
-          )}
+          ))}
+        </nav>
+
+        {/* Hire-me CTA */}
+        {!collapsed && (
+          <div className="px-3 pb-2 shrink-0">
+            <Link
+              href="/about-builder"
+              className="block rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-3 hover:border-primary/50 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-primary uppercase tracking-widest">
+                  Built by Aurimas
+                </span>
+              </div>
+              <p className="text-[11px] text-foreground/80 leading-snug mb-2">
+                Available for fractional AI PM &amp; Architect engagements.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary group">
+                Learn more
+                <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+          </div>
+        )}
+
+        {/* Collapse toggle */}
+        <div className="border-t border-border p-2 shrink-0">
           <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
           >
             {collapsed ? (
-              <ChevronRight className="w-[18px] h-[18px] shrink-0" />
+              <ChevronRight className="w-4 h-4 mx-auto" />
             ) : (
               <>
-                <ChevronLeft className="w-[18px] h-[18px] shrink-0" />
+                <ChevronLeft className="w-4 h-4" />
                 <span>Collapse</span>
               </>
             )}
@@ -203,7 +308,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* ── Mobile drawer ── */}
       <aside
         className={cn(
-          "md:hidden fixed top-0 left-0 bottom-0 z-50 w-[280px] flex flex-col border-r border-border bg-card shadow-xl transition-transform duration-300 ease-in-out",
+          "md:hidden fixed top-0 left-0 bottom-0 z-50 w-[284px] flex flex-col border-r border-border bg-card shadow-xl transition-transform duration-300 ease-in-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -225,44 +330,63 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <X className="w-5 h-5 text-foreground" />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto scrollbar-thin py-4 px-2">
-          <span className="px-3 mb-2 block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-            Workspaces
-          </span>
-          <div className="space-y-1">
-            {navigation.map((item) => {
-              const exact = "exact" in item && item.exact;
-              const isActive = exact
-                ? pathname === item.href
-                : pathname === item.href ||
-                  pathname?.startsWith(item.href + "/");
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-                  )}
-                >
-                  <item.icon className="w-[18px] h-[18px] shrink-0" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="flex-1 overflow-y-auto scrollbar-thin py-3 px-2">
+          {sections.map((section, idx) => (
+            <div key={section.label} className={cn(idx > 0 && "mt-4")}>
+              <span className="px-3 mb-1.5 block text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-widest">
+                {section.label}
+              </span>
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const active = isActive(item);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors",
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-foreground/70 hover:text-foreground hover:bg-secondary/60"
+                      )}
+                    >
+                      <item.icon className="w-[17px] h-[17px] shrink-0" />
+                      <span className="flex-1">{item.name}</span>
+                      {item.badge && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
-        <div className="border-t border-border p-2 shrink-0 space-y-1">
+        <div className="border-t border-border p-3 shrink-0">
+          <Link
+            href="/about-builder"
+            className="block rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-3"
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] font-semibold text-primary uppercase tracking-widest">
+                Built by Aurimas
+              </span>
+            </div>
+            <p className="text-[11px] text-foreground/80 leading-snug">
+              Available for fractional engagements.
+            </p>
+          </Link>
           <a
             href="https://aurimas.io"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
           >
-            <ExternalLink className="w-[18px] h-[18px]" />
-            <span>Back to aurimas.io</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>aurimas.io</span>
           </a>
         </div>
       </aside>
@@ -270,6 +394,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-hidden flex flex-col pt-14 md:pt-0">
         {children}
       </main>
+
+      {/* Global UX primitives */}
+      <Toaster />
+      <CommandPalette />
     </div>
   );
 }

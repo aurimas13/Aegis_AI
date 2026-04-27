@@ -8,12 +8,15 @@ import {
   Clock,
   Users,
   Eye,
-  ExternalLink,
   FileText,
   DollarSign,
   CheckCircle2,
   AlertTriangle,
+  LayoutDashboard,
+  Sparkles,
+  PlayCircle,
 } from "lucide-react";
+import { PageFooter } from "@/components/page-footer";
 
 /* ── Static data ── */
 
@@ -84,21 +87,8 @@ export default function Home() {
     <div className="flex-1 overflow-y-auto scrollbar-thin">
       <div className="max-w-5xl mx-auto px-6 md:px-8 py-10">
 
-        {/* ── Back link ── */}
-        <div className="flex justify-end mb-6">
-          <a
-            href="https://aurimas.io"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-primary transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Back to aurimas.io
-          </a>
-        </div>
-
         {/* ── Hero ── */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 pt-2">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-5">
             <Shield className="w-3.5 h-3.5 text-primary" />
             <span className="text-[11px] font-medium text-primary">
@@ -113,10 +103,33 @@ export default function Home() {
             to two of the highest-leverage workflows in enterprise IT: legacy modernization
             and service-desk automation.
           </p>
-          <p className="text-[14px] text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="text-[14px] text-muted-foreground max-w-xl mx-auto leading-relaxed mb-6">
             Most enterprises don&apos;t fail at AI adoption — they fail at AI accountability.
             Aegis makes every call auditable, every token accounted for, and every response
             governed by default, so builders ship faster and compliance teams sleep at night.
+          </p>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 px-5 py-3 rounded-lg bg-primary text-primary-foreground text-[14px] font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Open the live dashboard
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center gap-1.5 px-5 py-3 rounded-lg border border-border bg-card text-[14px] font-semibold text-foreground hover:bg-secondary transition-colors shadow-sm"
+            >
+              View pricing
+            </Link>
+          </div>
+          <p className="mt-4 text-[11px] text-muted-foreground">
+            Press{" "}
+            <kbd className="px-1.5 py-0.5 rounded font-mono bg-secondary border border-border text-[10px]">
+              ⌘K
+            </kbd>{" "}
+            anywhere to search the platform.
           </p>
         </div>
 
@@ -141,7 +154,7 @@ export default function Home() {
 
         {/* ── Workflow Cards ── */}
         <h2 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-          Workflows — Try Them Live
+          Workflows — try them live
         </h2>
         <div className="grid md:grid-cols-2 gap-5 mb-14">
           {modules.map((mod) => (
@@ -175,7 +188,43 @@ export default function Home() {
                     </p>
                   </div>
                 ))}
+                <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                  <PlayCircle className="w-3.5 h-3.5" />
+                  Try it
+                </span>
               </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* ── Platform pages quick-link grid ── */}
+        <h2 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+          Explore the platform
+        </h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-14">
+          {[
+            { href: "/dashboard", title: "Live Dashboard", desc: "Real-time KPIs, spend, latency, and a streaming activity feed.", badge: "Live" },
+            { href: "/models", title: "Model Registry", desc: "Every governed AI model with risk tier, owner, and 30-day usage." },
+            { href: "/policies", title: "Policy Library", desc: "Toggle 10 governance rules — changes persist locally for the demo.", badge: "Interactive" },
+            { href: "/audit", title: "Audit Log", desc: "Searchable, filterable event trail with full event payloads." },
+            { href: "/integrations", title: "Integrations", desc: "20+ connectors — Slack, Jira, ServiceNow, Datadog, OpenAI, more." },
+            { href: "/status", title: "System Status", desc: "Live health, 90-day uptime per service, incident history." },
+          ].map((p) => (
+            <Link
+              key={p.href}
+              href={p.href}
+              className="group rounded-xl border border-border bg-card px-4 py-3 shadow-sm hover:border-primary/40 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-[13px] font-semibold text-foreground">{p.title}</p>
+                {p.badge && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary text-primary-foreground uppercase tracking-wider">
+                    {p.badge}
+                  </span>
+                )}
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <p className="text-[11.5px] text-muted-foreground leading-snug">{p.desc}</p>
             </Link>
           ))}
         </div>
@@ -302,28 +351,45 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* ── Footer ── */}
-        <div className="text-center pb-4 border-t border-border pt-8">
-          <div className="inline-flex items-center gap-2 text-muted-foreground mb-2">
-            <Shield className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] italic">
-              Every AI invocation is tracked. Every token is accounted for. Every
-              response carries a governance card.
-            </span>
+        {/* ── Builder strip ── */}
+        <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-6 mb-10 shadow-sm">
+          <div className="flex items-start gap-4 flex-wrap">
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-sm shrink-0">
+              <Sparkles className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <div className="flex-1 min-w-[260px]">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-primary mb-1">
+                Built by Aurimas Nausedas
+              </p>
+              <h3 className="text-xl font-bold text-foreground tracking-tight mb-1.5">
+                Need a similar platform inside your company?
+              </h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed mb-3 max-w-2xl">
+                I take on Fractional AI Product Manager and AI Architect engagements —
+                governance-first AI design, legacy modernization, and ITSM copilots delivered
+                end-to-end.
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  href="/about-builder"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  Hire me
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  href="/case-study"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border bg-card text-[13px] font-semibold text-foreground hover:bg-secondary transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Read the case study
+                </Link>
+              </div>
+            </div>
           </div>
-          <p className="text-[11px] text-muted-foreground/70">
-            Built by{" "}
-            <a
-              href="https://aurimas.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium"
-            >
-              Aurimas Nausedas
-            </a>{" "}
-            — Fractional AI Product Manager &amp; AI Architect.
-          </p>
         </div>
+
+        <PageFooter />
       </div>
     </div>
   );
